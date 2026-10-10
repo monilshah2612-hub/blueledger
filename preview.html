@@ -1,0 +1,1688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1650c8">
+<title>BlueLedger</title>
+<style>:root {
+  --b900: #0a2a66; --b800: #0f3a8f; --b700: #1650c8; --b600: #1e63e9; --b500: #2f80ed; --b400: #5aa0ff; --b300: #93c1ff; --b100: #dbe9ff; --b50: #eef4ff;
+  --bg: #eef4ff; --card: #ffffff; --text: #0f2342; --muted: #6b7fa3; --line: #e1eaf8;
+  --income: #0d9488; --expense: #e5484d; --transfer: #2f80ed;
+  --shadow: 0 2px 10px rgba(22, 80, 200, .10);
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #08142b; --card: #0f2247; --text: #e8f0ff; --muted: #8ea6d1; --line: #1a3361; --income: #2dd4bf; --expense: #ff7a7f; --b50: #0c1d3f; --b100: #16315f; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 15px; }
+body.noscroll { overflow: hidden; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+input, select, textarea { font: inherit; color: var(--text); }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.in { color: var(--income); } .ex { color: var(--expense); } .tr { color: var(--transfer); }
+.svg { width: 22px; height: 22px; display: block; }
+
+#app { display: flex; flex-direction: column; height: 100%; }
+#topbar { background: linear-gradient(160deg, var(--b600), var(--b800)); color: #fff; padding: calc(var(--safe-top) + 8px) 14px 12px; border-radius: 0 0 22px 22px; box-shadow: 0 6px 18px rgba(15, 58, 143, .25); z-index: 5; }
+.tb-row { display: flex; align-items: center; gap: 4px; min-height: 44px; }
+.tb-title { font-size: 22px; font-weight: 700; flex: 1; }
+.tb-month { font-size: 19px; font-weight: 700; padding: 6px 10px; border-radius: 12px; }
+.tb-right { margin-left: auto; display: flex; gap: 4px; }
+.ib { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: inherit; }
+.ib:active { background: rgba(255, 255, 255, .18); }
+.page .ib:active, .sheet .ib:active { background: var(--b100); }
+
+.seg { display: flex; background: rgba(255, 255, 255, .16); border-radius: 14px; padding: 3px; margin: 6px 0 10px; }
+.seg button { flex: 1; padding: 8px 4px; border-radius: 11px; font-weight: 600; font-size: 14px; opacity: .85; }
+.seg button.on { background: #fff; color: var(--b700); opacity: 1; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
+.sheet .seg, .page .seg, #screen .seg { background: var(--b100); }
+.sheet .seg button, .page .seg button, #screen .seg button { color: var(--muted); }
+.sheet .seg button.on, .page .seg button.on, #screen .seg button.on { background: var(--card); color: var(--b700); }
+.sheet .seg button.on.exp { color: var(--expense); } .sheet .seg button.on.inc { color: var(--income); }
+.filters { display: flex; gap: 8px; margin-bottom: 10px; }
+.pill { background: rgba(255, 255, 255, .18); color: #fff; border: 0; border-radius: 20px; padding: 6px 12px; font-weight: 600; max-width: 100%; }
+.pill option { color: #000; }
+.searchbox { width: 100%; border: 0; border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; background: rgba(255, 255, 255, .95); color: #0f2342; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sumcard { background: rgba(255, 255, 255, .16); border-radius: 14px; padding: 8px 6px; text-align: center; }
+.sumcard.bal { background: #fff; color: var(--b700); }
+.sumcard small { display: block; font-size: 12px; opacity: .85; font-weight: 600; }
+.sumcard b { display: block; font-size: 14px; margin-top: 2px; word-break: break-all; }
+.sumcard.bal small { color: var(--muted); }
+
+#screen { flex: 1; overflow-y: auto; padding: 14px 12px calc(150px + var(--safe-bot)); -webkit-overflow-scrolling: touch; }
+.card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+.card h4 { margin: 0 0 10px; font-size: 15px; }
+.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty .big { font-size: 46px; }
+.section-t { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 16px 4px 8px; }
+
+.fab { position: fixed; right: 18px; bottom: calc(78px + var(--safe-bot)); width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(145deg, var(--b500), var(--b700)); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 20px rgba(22, 80, 200, .45); z-index: 6; }
+.fab svg { width: 28px; height: 28px; }
+.fab:active { transform: scale(.94); }
+#bottomnav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); box-shadow: 0 -4px 18px rgba(22, 80, 200, .12); padding: 6px 4px calc(6px + var(--safe-bot)); z-index: 5; border-radius: 20px 20px 0 0; }
+#bottomnav button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: var(--muted); border-radius: 14px; }
+#bottomnav button.on { color: var(--b600); }
+#bottomnav button.on .svg { stroke-width: 2.4; }
+
+/* rows */
+.daygroup { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+.dayhead { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--b50); border-bottom: 1px solid var(--line); }
+.dnum { font-size: 22px; font-weight: 800; color: var(--b700); min-width: 30px; }
+.dmeta { font-size: 12px; color: var(--muted); font-weight: 600; }
+.chip { display: inline-block; background: var(--b600); color: #fff; border-radius: 8px; padding: 1px 7px; margin-right: 4px; font-size: 11px; }
+.dtot { margin-left: auto; text-align: right; font-size: 12px; font-weight: 700; display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row:active { background: var(--b50); }
+.ico { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; font-size: 20px; flex: none; }
+.row-main { flex: 1; min-width: 0; }
+.row-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-note { color: var(--muted); font-weight: 400; }
+.dot { margin: 0 4px; color: var(--muted); }
+.row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amt { font-weight: 700; white-space: nowrap; }
+.amt.in { color: var(--income); } .amt.ex { color: var(--expense); } .amt.tr { color: var(--transfer); }
+
+/* calendar */
+.cal { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 8px; margin-bottom: 12px; }
+.cal-h, .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-h div { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); padding: 6px 0; }
+.cal-h div:last-child { color: var(--b600); }
+.cell { min-height: 62px; border-radius: 10px; padding: 3px 3px 2px; background: var(--b50); overflow: hidden; }
+.cell.off { opacity: .35; }
+.cell.sel { outline: 2px solid var(--b600); background: var(--b100); }
+.cell.today .cn { background: var(--b600); color: #fff; border-radius: 8px; padding: 0 5px; display: inline-block; }
+.cn { font-size: 12px; font-weight: 700; margin-bottom: 1px; }
+.cell div:not(.cn) { font-size: 9.5px; font-weight: 700; line-height: 1.25; text-align: right; }
+.cell .ci { color: var(--income); } .cell .ce { color: var(--expense); } .cell .cb { color: var(--muted); }
+.day-panel-h { display: flex; align-items: center; gap: 8px; margin: 4px 4px 8px; }
+.day-panel-h b { flex: 1; }
+
+/* monthly table */
+.mrow { display: grid; grid-template-columns: 54px 1fr 1fr 1fr; gap: 6px; padding: 11px 6px; border-bottom: 1px solid var(--line); font-size: 13px; align-items: center; }
+.mrow.h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.mrow span:not(:first-child) { text-align: right; }
+.mrow.cur { background: var(--b50); border-radius: 10px; }
+
+/* budget */
+.env { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px; }
+.env-top { display: flex; align-items: center; gap: 12px; }
+.env-name { font-weight: 700; flex: 1; }
+.env-left { font-weight: 800; font-size: 15px; }
+.bar { height: 10px; background: var(--b100); border-radius: 8px; overflow: hidden; margin: 10px 0 6px; }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--b400), var(--b600)); border-radius: 8px; }
+.bar.warn > i { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.bar.over > i { background: linear-gradient(90deg, #ff8a8f, var(--expense)); }
+.env-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.hero { background: linear-gradient(150deg, var(--b500), var(--b800)); color: #fff; border-radius: 20px; padding: 16px; margin-bottom: 12px; box-shadow: 0 8px 20px rgba(22, 80, 200, .3); }
+.hero small { opacity: .8; font-weight: 600; }
+.hero .big { font-size: 28px; font-weight: 800; margin: 2px 0 8px; }
+.hero-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px; }
+.hero-grid b { display: block; font-size: 14px; }
+
+/* reports */
+.donut { width: 180px; height: 180px; display: block; margin: 0 auto; transform: rotate(0deg); }
+.dt1 { font-size: 3.4px; text-anchor: middle; fill: var(--muted); font-weight: 600; }
+.dt2 { font-size: 4.6px; text-anchor: middle; fill: var(--text); font-weight: 800; }
+.leg { display: flex; align-items: center; gap: 10px; padding: 7px 2px; font-size: 14px; }
+.leg i { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.leg span { flex: 1; } .leg em { font-style: normal; color: var(--muted); font-size: 12px; margin-right: 6px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { background: var(--card); border-radius: 16px; padding: 10px 8px; text-align: center; box-shadow: var(--shadow); }
+.stat small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }
+.stat b { font-size: 14px; }
+.bars text { font-size: 9px; fill: var(--muted); text-anchor: middle; }
+
+/* menu */
+.menu-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--card); border-radius: 16px; margin-bottom: 8px; box-shadow: var(--shadow); width: 100%; text-align: left; }
+.menu-item .ico { width: 42px; height: 42px; }
+.menu-item b { display: block; } .menu-item small { color: var(--muted); }
+
+/* sheets & pages */
+#sheetRoot { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+#sheetRoot.open { pointer-events: auto; }
+.scrim { position: absolute; inset: 0; background: rgba(5, 20, 50, .5); animation: fade .2s; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 92%; overflow-y: auto; background: var(--card); border-radius: 24px 24px 0 0; padding: 8px 16px calc(18px + var(--safe-bot)); animation: up .22s ease-out; }
+.grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 0 auto 8px; }
+.sheet-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sheet-h h3 { margin: 0; font-size: 18px; }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.page { position: fixed; inset: 0; background: var(--bg); z-index: 20; display: flex; flex-direction: column; }
+.page-h { display: flex; align-items: center; gap: 6px; padding: calc(var(--safe-top) + 8px) 10px 10px; background: linear-gradient(160deg, var(--b600), var(--b800)); color: #fff; border-radius: 0 0 22px 22px; }
+.page-h h2 { margin: 0; font-size: 20px; flex: 1; }
+.page-b { flex: 1; overflow-y: auto; padding: 14px 12px calc(40px + var(--safe-bot)); }
+
+label.lbl { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 12px 0 5px; text-transform: uppercase; letter-spacing: .4px; }
+.inp, select.inp, textarea.inp { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--b50); outline: none; }
+.inp:focus { border-color: var(--b500); background: var(--card); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.amt-box { display: flex; align-items: center; gap: 8px; background: var(--b50); border: 1.5px solid var(--line); border-radius: 18px; padding: 8px 16px; margin: 4px 0 4px; }
+.amt-box span { font-size: 28px; font-weight: 700; color: var(--b600); }
+.amt-box input { flex: 1; min-width: 0; font-size: 34px; font-weight: 800; border: 0; background: none; outline: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cchip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 20px; background: var(--b50); border: 1.5px solid var(--line); font-size: 13px; font-weight: 600; }
+.cchip.sel { background: var(--b600); border-color: var(--b600); color: #fff; }
+.cchip.dis { opacity: .4; pointer-events: none; }
+.cchip.add { border-style: dashed; color: var(--b600); }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent; }
+.swatch.sel { border-color: var(--text); }
+.emo { width: 40px; height: 40px; display: grid; place-items: center; font-size: 20px; border-radius: 12px; background: var(--b50); border: 1.5px solid transparent; }
+.emo.sel { border-color: var(--b600); background: var(--b100); }
+.btn { padding: 14px; border-radius: 16px; font-weight: 700; flex: 1; text-align: center; }
+.btn.primary { background: linear-gradient(145deg, var(--b500), var(--b700)); color: #fff; box-shadow: 0 6px 14px rgba(22, 80, 200, .3); }
+.btn.ghost { background: var(--b100); color: var(--b700); }
+.btn.danger { background: #fde8e9; color: var(--expense); }
+.btn.block { display: block; width: 100%; margin-top: 12px; }
+.btn-row { display: flex; gap: 10px; margin-top: 16px; }
+.kv { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.kv:last-child { border-bottom: 0; }
+.tog { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; gap: 12px; }
+.tog input { width: 44px; height: 24px; accent-color: var(--b600); }
+.badge { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 2px 8px; background: var(--b100); color: var(--b700); }
+.badge.red { background: #fde8e9; color: var(--expense); } .badge.green { background: #d9f5f1; color: var(--income); }
+
+#toast { position: fixed; left: 50%; bottom: calc(150px + var(--safe-bot)); transform: translate(-50%, 20px); background: #0a2a66; color: #fff; padding: 11px 16px; border-radius: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 80; max-width: 88%; text-align: center; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#toast button { margin-left: 10px; color: var(--b300); font-weight: 800; }
+
+/* wizard + lock */
+.wizard, .lock { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; }
+.wz-top { background: linear-gradient(160deg, var(--b600), var(--b900)); color: #fff; padding: calc(var(--safe-top) + 22px) 20px 26px; border-radius: 0 0 28px 28px; }
+.wz-top h1 { margin: 6px 0 4px; font-size: 26px; } .wz-top p { margin: 0; opacity: .85; }
+.dots { display: flex; gap: 6px; } .dots i { height: 5px; flex: 1; background: rgba(255, 255, 255, .3); border-radius: 4px; } .dots i.on { background: #fff; }
+.wz-body { flex: 1; overflow-y: auto; padding: 16px 16px 10px; }
+.wz-foot { padding: 10px 16px calc(14px + var(--safe-bot)); display: flex; gap: 10px; background: var(--bg); }
+.acc-edit { background: var(--card); border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.lock { align-items: center; justify-content: center; background: linear-gradient(160deg, var(--b600), var(--b900)); color: #fff; text-align: center; }
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin: 20px 0; } .pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; } .pin-dots i.on { background: #fff; }
+.keypad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px; justify-content: center; }
+.keypad button { height: 64px; border-radius: 50%; background: rgba(255, 255, 255, .15); font-size: 24px; font-weight: 600; color: #fff; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar"></header>
+  <main id="screen"></main>
+  <button id="fab" class="fab" data-act="addTx" aria-label="Add transaction"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <nav id="bottomnav"></nav>
+</div>
+<div id="page" class="page hidden"></div>
+<div id="sheetRoot"></div>
+<div id="wizard" class="wizard hidden"></div>
+<div id="lock" class="lock hidden"></div>
+<div id="toast"></div>
+<script>'use strict';
+window.App = window.App || {};
+(function (App) {
+  var KEY = 'blueledger.v1';
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+  var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var ymd = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parse = function (s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2] || 1); };
+  var today = function () { return ymd(new Date()); };
+  var r2 = function (n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; };
+  var uid = function () { return Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var nf = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var fmt = function (n) { return nf.format(r2(n)); };
+  var money = function (n) {
+    n = r2(n);
+    return (n < 0 ? '-' : '') + App.db.settings.currency + nf.format(Math.abs(n));
+  };
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var monthLabel = function (mk) { var p = mk.split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; };
+  var shiftMonth = function (mk, n) {
+    var p = mk.split('-').map(Number);
+    var d = new Date(p[0], p[1] - 1 + n, 1);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1);
+  };
+  var dateLabel = function (s) {
+    var d = parse(s);
+    return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  };
+  var shortDate = function (s) { var d = parse(s); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
+  Object.assign(App, { $: $, $$: $$, pad: pad, ymd: ymd, parse: parse, today: today, r2: r2, uid: uid, esc: esc,
+    fmt: fmt, money: money, MONTHS: MONTHS, DAYS: DAYS, monthLabel: monthLabel, shiftMonth: shiftMonth,
+    dateLabel: dateLabel, shortDate: shortDate });
+
+  // ---------- constants ----------
+  App.COLORS = ['#1e63e9', '#2f80ed', '#0ea5e9', '#06b6d4', '#3b5bdb', '#4f46e5', '#14b8a6', '#22c55e', '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#64748b'];
+  App.EMOJIS = ['🍔', '🛒', '🚌', '⛽', '🏠', '💡', '📱', '🛍️', '💊', '🎬', '✈️', '🎓', '🔁', '💈', '🎁', '📈', '🏦', '🏷️', '💼', '💻', '🏪', '💰', '↩️', '☕', '🍕', '🚕', '🚗', '🏋️', '🐶', '👶', '🎮', '📚', '🧾', '🔧', '🎉', '🌴', '💳', '🪙', '🧴', '🍺'];
+  App.SUG_EXP = [['Food & Dining', '🍔'], ['Groceries', '🛒'], ['Transport', '🚌'], ['Fuel', '⛽'], ['Rent', '🏠'], ['Bills & Utilities', '💡'], ['Mobile & Internet', '📱'], ['Shopping', '🛍️'], ['Health', '💊'], ['Entertainment', '🎬'], ['Travel', '✈️'], ['Education', '🎓'], ['Subscriptions', '🔁'], ['Personal Care', '💈'], ['Gifts & Donations', '🎁'], ['Investments', '📈'], ['EMI / Loans', '🏦'], ['Others', '🏷️']];
+  App.SUG_INC = [['Salary', '💼'], ['Freelance', '💻'], ['Business', '🏪'], ['Interest', '🏦'], ['Rental Income', '🏠'], ['Gifts', '🎁'], ['Refunds', '↩️'], ['Others', '💰']];
+  App.ACC_TYPES = [['cash', 'Cash', '💵'], ['bank', 'Bank account', '🏦'], ['card', 'Credit card', '💳'], ['wallet', 'UPI / Wallet', '👛'], ['savings', 'Savings', '🐖'], ['invest', 'Investment', '📈'], ['other', 'Other', '💼']];
+  App.accIcon = function (type) {
+    var t = App.ACC_TYPES.filter(function (x) { return x[0] === type; })[0];
+    return t ? t[2] : '💼';
+  };
+
+  var ICONS = {
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    envelope: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+    wallet: '<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    more: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    back: '<path d="m15 18-6-6 6-6"/>',
+    fwd: '<path d="m9 18 6-6-6-6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
+    check: '<path d="m5 12 5 5L20 7"/>'
+  };
+  App.icon = function (n) {
+    return '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[n] || '') + '</svg>';
+  };
+
+  // ---------- state ----------
+  function blank() {
+    return {
+      v: 1,
+      settings: { name: '', currency: '₹', onboarded: false, autoBackup: true, backupEveryDays: 7, lastBackup: null, lastAutoBackup: null, lastShared: null, remindBackup: true, reminders: true, pin: null, notifAsked: false, lastAcc: null },
+      accounts: [], categories: [], transactions: [], envelopes: [], bills: [], goals: [], loans: []
+    };
+  }
+  App.blank = blank;
+  function normalize(d) {
+    var b = blank();
+    var out = Object.assign(b, d || {});
+    out.settings = Object.assign(blank().settings, (d && d.settings) || {});
+    ['accounts', 'categories', 'transactions', 'envelopes', 'bills', 'goals', 'loans'].forEach(function (k) {
+      if (!Array.isArray(out[k])) out[k] = [];
+    });
+    return out;
+  }
+  App.normalize = normalize;
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) return normalize(JSON.parse(raw));
+    } catch (e) { /* fall through */ }
+    return blank();
+  }
+  App.db = load();
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(App.db)); }
+    catch (e) {
+      if (!App._storeWarned) { App._storeWarned = true; App.toast('This view cannot store data – changes are kept only until you close it'); }
+    }
+  }
+  App.persist = persist;
+  var saveT;
+  App.save = function () {
+    persist();
+    clearTimeout(saveT);
+    saveT = setTimeout(function () {
+      if (App.maybeAutoBackup) App.maybeAutoBackup();
+      if (App.scheduleReminders) App.scheduleReminders();
+    }, 3000);
+  };
+  App.resetAll = function () { App.db = blank(); persist(); };
+
+  App.ui = { tab: 'home', sub: 'daily', month: today().slice(0, 7), acc: 'all', sel: today(), search: '', searchOpen: false, repType: 'expense', page: null, loanDir: 'lent', catType: 'expense' };
+
+  // ---------- lookups & maths ----------
+  App.acc = function (id) { return App.db.accounts.filter(function (a) { return a.id === id; })[0]; };
+  App.cat = function (id) { return App.db.categories.filter(function (c) { return c.id === id; })[0]; };
+  App.accBalance = function (a) {
+    var b = a.opening || 0;
+    App.db.transactions.forEach(function (t) {
+      if (t.type === 'income' && t.accountId === a.id) b += t.amount;
+      else if (t.type === 'expense' && t.accountId === a.id) b -= t.amount;
+      else if (t.type === 'transfer') {
+        if (t.accountId === a.id) b -= t.amount;
+        if (t.toAccountId === a.id) b += t.amount;
+      }
+    });
+    return r2(b);
+  };
+  var sortTx = function (a, b) { return b.date.localeCompare(a.date) || (b.ts || 0) - (a.ts || 0); };
+  App.sortTx = sortTx;
+  App.txIn = function (mk, accId) {
+    return App.db.transactions.filter(function (t) {
+      if (mk && t.date.indexOf(mk) !== 0) return false;
+      if (accId && accId !== 'all' && t.accountId !== accId && t.toAccountId !== accId) return false;
+      return true;
+    }).sort(sortTx);
+  };
+  App.totals = function (mk, accId) {
+    var inc = 0, exp = 0;
+    App.txIn(mk, accId).forEach(function (t) {
+      if (accId && accId !== 'all' && t.accountId !== accId) return;
+      if (t.type === 'income') inc += t.amount;
+      else if (t.type === 'expense') exp += t.amount;
+    });
+    return { income: r2(inc), expense: r2(exp), balance: r2(inc - exp) };
+  };
+  App.catUsage = function (id) {
+    return App.db.transactions.filter(function (t) { return t.categoryId === id; }).length;
+  };
+  App.envSpent = function (env, mk) {
+    return r2(App.db.transactions.filter(function (t) {
+      return t.type === 'expense' && t.date.indexOf(mk) === 0 && env.categoryIds.indexOf(t.categoryId) >= 0;
+    }).reduce(function (s, t) { return s + t.amount; }, 0));
+  };
+  App.addTx = function (o) {
+    var t = Object.assign({ id: uid(), ts: Date.now(), note: '' }, o, { amount: r2(o.amount) });
+    App.db.transactions.push(t);
+    return t;
+  };
+  App.evalAmount = function (str) {
+    var s = String(str || '').replace(/,/g, '').replace(/×/g, '*').replace(/÷/g, '/').trim();
+    if (!s) return NaN;
+    if (/^[\d.+\-*/() ]+$/.test(s)) {
+      try {
+        var v = Function('"use strict";return (' + s + ')')();
+        return isFinite(v) ? r2(v) : NaN;
+      } catch (e) { return NaN; }
+    }
+    return NaN;
+  };
+
+  // ---------- recurring bills ----------
+  App.nextDate = function (dateStr, freq, day) {
+    var d = parse(dateStr);
+    if (freq === 'weekly') { d.setDate(d.getDate() + 7); return ymd(d); }
+    var y = d.getFullYear() + (freq === 'yearly' ? 1 : 0);
+    var m = d.getMonth() + (freq === 'yearly' ? 0 : 1);
+    var dim = new Date(y, m + 1, 0).getDate();
+    return ymd(new Date(y, m, Math.min(day || d.getDate(), dim)));
+  };
+  App.processBills = function () {
+    var added = 0, t = today();
+    App.db.bills.forEach(function (b) {
+      if (!b.auto) return;
+      var guard = 0;
+      while (b.nextDue <= t && guard++ < 60) {
+        App.addTx({ type: b.type, amount: b.amount, date: b.nextDue, accountId: b.accountId, categoryId: b.categoryId || '', note: b.title, billId: b.id });
+        b.nextDue = App.nextDate(b.nextDue, b.freq, b.day);
+        added++;
+      }
+    });
+    if (added) { App.save(); }
+    return added;
+  };
+  App.payBill = function (id) {
+    var b = App.db.bills.filter(function (x) { return x.id === id; })[0];
+    if (!b) return;
+    App.addTx({ type: b.type, amount: b.amount, date: today(), accountId: b.accountId, categoryId: b.categoryId || '', note: b.title, billId: b.id });
+    b.nextDue = App.nextDate(b.nextDue, b.freq, b.day);
+    App.save();
+  };
+
+  // ---------- native bridge ----------
+  App.cap = function (name) {
+    try {
+      var C = window.Capacitor;
+      if (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins[name]) return C.Plugins[name];
+    } catch (e) { /* not native */ }
+    return null;
+  };
+
+  // ---------- backup / restore / export ----------
+  var stamp = function () { var d = new Date(); return ymd(d) + '_' + pad(d.getHours()) + pad(d.getMinutes()); };
+  function payload() {
+    return JSON.stringify({ app: 'BlueLedger', version: 1, exportedAt: new Date().toISOString(), data: App.db });
+  }
+  function download(name, text, mime) {
+    var b = new Blob([text], { type: mime || 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  async function prune(FS, dir, folder) {
+    try {
+      var r = await FS.readdir({ path: folder, directory: dir });
+      var files = r.files.map(function (f) { return f.name || f; }).filter(function (n) { return /-auto\.json$/.test(n); }).sort();
+      while (files.length > 10) await FS.deleteFile({ path: folder + files.shift(), directory: dir });
+    } catch (e) { /* best effort */ }
+  }
+  App.backupNow = async function (auto) {
+    var name = 'BlueLedger-' + stamp() + (auto ? '-auto' : '') + '.json';
+    var text = payload();
+    var FS = App.cap('Filesystem');
+    var where = 'Downloads';
+    if (FS) {
+      var ok = false;
+      var tries = [['DOCUMENTS', 'BlueLedger/', 'Documents/BlueLedger'], ['EXTERNAL', 'BlueLedger/', 'app folder'], ['DATA', 'backups/', 'app storage']];
+      for (var i = 0; i < tries.length && !ok; i++) {
+        try {
+          await FS.writeFile({ path: tries[i][1] + name, data: text, directory: tries[i][0], encoding: 'utf8', recursive: true });
+          where = tries[i][2]; ok = true;
+          if (auto) prune(FS, tries[i][0], tries[i][1]);
+        } catch (e) { /* try next location */ }
+      }
+      if (!ok) throw new Error('Could not write the backup file');
+    } else {
+      download(name, text);
+    }
+    App.db.settings.lastBackup = new Date().toISOString();
+    if (auto) App.db.settings.lastAutoBackup = App.db.settings.lastBackup;
+    persist();
+    return { name: name, where: where };
+  };
+  App.shareBackup = async function () {
+    var name = 'BlueLedger-' + stamp() + '.json';
+    var text = payload();
+    var FS = App.cap('Filesystem'), SH = App.cap('Share');
+    if (FS && SH) {
+      var r = await FS.writeFile({ path: name, data: text, directory: 'CACHE', encoding: 'utf8' });
+      await SH.share({ title: 'BlueLedger backup', text: 'BlueLedger backup', url: r.uri, dialogTitle: 'Save backup to…' });
+    } else {
+      download(name, text);
+    }
+    App.db.settings.lastShared = new Date().toISOString();
+    persist();
+  };
+  App.maybeAutoBackup = async function () {
+    var s = App.db.settings;
+    if (!s.autoBackup || !s.onboarded || !App.db.accounts.length) return;
+    if (!App.cap('Filesystem')) return;
+    var last = s.lastAutoBackup ? new Date(s.lastAutoBackup).getTime() : 0;
+    if ((Date.now() - last) / 864e5 < s.backupEveryDays) return;
+    try { await App.backupNow(true); } catch (e) { /* ignore */ }
+  };
+  App.restoreFromText = function (text) {
+    var o;
+    try { o = JSON.parse(text); } catch (e) { throw new Error('That file is not a valid backup'); }
+    var d = o && o.data ? o.data : o;
+    if (!d || !Array.isArray(d.accounts) || !Array.isArray(d.transactions)) throw new Error('That file is not a BlueLedger backup');
+    App.db = normalize(d);
+    persist();
+  };
+  App.exportCSV = async function () {
+    var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+    var rows = [['Date', 'Type', 'Account', 'To account', 'Category', 'Amount', 'Note'].map(q).join(',')];
+    App.db.transactions.slice().sort(sortTx).forEach(function (t) {
+      var a = App.acc(t.accountId), to = App.acc(t.toAccountId), c = App.cat(t.categoryId);
+      rows.push([t.date, t.type, a ? a.name : '', to ? to.name : '', c ? c.name : '', t.amount, t.note].map(q).join(','));
+    });
+    var name = 'BlueLedger-transactions-' + stamp() + '.csv';
+    var text = rows.join('\n');
+    var FS = App.cap('Filesystem'), SH = App.cap('Share');
+    if (FS && SH) {
+      var r = await FS.writeFile({ path: name, data: text, directory: 'CACHE', encoding: 'utf8' });
+      await SH.share({ title: 'Transactions CSV', url: r.uri, dialogTitle: 'Export transactions' });
+    } else {
+      download(name, text, 'text/csv');
+    }
+  };
+
+  // ---------- reminders (local notifications) ----------
+  App.scheduleReminders = async function () {
+    var LN = App.cap('LocalNotifications');
+    if (!LN) return;
+    var s = App.db.settings;
+    try {
+      var pend = await LN.getPending();
+      if (pend.notifications && pend.notifications.length) await LN.cancel({ notifications: pend.notifications });
+      if (!s.onboarded || (!s.reminders && !s.remindBackup)) return;
+      var perm = await LN.checkPermissions();
+      if (perm.display !== 'granted') {
+        if (s.notifAsked) return;
+        s.notifAsked = true; persist();
+        var r = await LN.requestPermissions();
+        if (r.display !== 'granted') return;
+      }
+      var list = [], n = 100;
+      if (s.reminders) {
+        App.db.bills.forEach(function (b) {
+          if (b.remind == null || b.remind < 0) return;
+          var d = parse(b.nextDue);
+          d.setDate(d.getDate() - b.remind);
+          d.setHours(9, 0, 0, 0);
+          if (d.getTime() > Date.now()) {
+            list.push({ id: n++, title: 'Due: ' + b.title, body: (b.remind ? 'Due in ' + b.remind + ' day(s) · ' : 'Due today · ') + money(b.amount), schedule: { at: d, allowWhileIdle: true } });
+          }
+        });
+      }
+      if (s.remindBackup) {
+        var every = s.backupEveryDays >= 30 ? { day: 1, hour: 10, minute: 0 } : (s.backupEveryDays <= 1 ? { hour: 10, minute: 0 } : { weekday: 1, hour: 10, minute: 0 });
+        list.push({ id: 1, title: 'Back up your BlueLedger data', body: 'More → Backup → Share backup to save it to Google Drive.', schedule: { on: every, allowWhileIdle: true } });
+      }
+      if (list.length) await LN.schedule({ notifications: list });
+    } catch (e) { /* notifications are best effort */ }
+  };
+
+  // ---------- sheets, toast, actions ----------
+  App.actions = {}; App.changes = {}; App.inputs = {};
+  App.openSheet = function (html, mount) {
+    var root = $('#sheetRoot');
+    root.innerHTML = '<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog"><div class="grab"></div>' + html + '</div>';
+    root.classList.add('open');
+    document.body.classList.add('noscroll');
+    App._sheetOpen = true;
+    if (mount) mount($('.sheet', root));
+  };
+  App.closeSheet = function () {
+    var root = $('#sheetRoot');
+    root.classList.remove('open');
+    root.innerHTML = '';
+    document.body.classList.remove('noscroll');
+    App._sheetOpen = false;
+  };
+  App.actions.closeSheet = function () { App.closeSheet(); };
+  App.toast = function (msg, undo) {
+    var t = $('#toast');
+    t.innerHTML = esc(msg) + (undo ? ' <button id="undoBtn">Undo</button>' : '');
+    t.className = 'show';
+    clearTimeout(App._tt);
+    if (undo) $('#undoBtn').onclick = function () { undo(); t.className = ''; };
+    App._tt = setTimeout(function () { t.className = ''; }, undo ? 5000 : 2400);
+  };
+  App.confirmSheet = function (title, text, okLabel, onOk) {
+    App.openSheet('<div class="sheet-h"><h3>' + esc(title) + '</h3></div><p class="muted">' + esc(text) + '</p><div class="btn-row"><button class="btn ghost" data-act="closeSheet">Cancel</button><button class="btn danger" id="confirmOk">' + esc(okLabel) + '</button></div>',
+      function (el) { $('#confirmOk', el).onclick = function () { App.closeSheet(); onOk(); }; });
+  };
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var fn = App.actions[el.dataset.act];
+    if (fn) fn(el, e);
+  });
+  document.addEventListener('change', function (e) {
+    var el = e.target.closest('[data-change]');
+    if (el && App.changes[el.dataset.change]) App.changes[el.dataset.change](el, e);
+  });
+  document.addEventListener('input', function (e) {
+    var el = e.target.closest('[data-input]');
+    if (el && App.inputs[el.dataset.input]) App.inputs[el.dataset.input](el, e);
+  });
+})(window.App);
+</script>
+<script>'use strict';
+(function (App) {
+  var $ = App.$, esc = App.esc, money = App.money, r2 = App.r2, icon = App.icon;
+
+  // ---------- navigation ----------
+  App.setTab = function (t) {
+    App.ui.tab = t;
+    App.ui.searchOpen = false; App.ui.search = '';
+    App.render();
+    var s = $('#screen'); if (s) s.scrollTop = 0;
+  };
+  App.actions.tab = function (el) { App.setTab(el.dataset.t); };
+  App.actions.prevMonth = function () { App.ui.month = App.shiftMonth(App.ui.month, -1); fixSel(); App.render(); };
+  App.actions.nextMonth = function () { App.ui.month = App.shiftMonth(App.ui.month, 1); fixSel(); App.render(); };
+  function fixSel() {
+    var u = App.ui;
+    if (u.sel.indexOf(u.month) !== 0) u.sel = (App.today().indexOf(u.month) === 0) ? App.today() : u.month + '-01';
+  }
+  App.actions.subTab = function (el) { App.ui.sub = el.dataset.v; App.render(); };
+  App.actions.toggleSearch = function () {
+    App.ui.searchOpen = !App.ui.searchOpen; if (!App.ui.searchOpen) App.ui.search = '';
+    App.render();
+    if (App.ui.searchOpen) { var i = $('#searchBox'); if (i) i.focus(); }
+  };
+  App.inputs.search = function (el) { App.ui.search = el.value; App.renderScreen(); };
+  App.changes.accFilter = function (el) { App.ui.acc = el.value; App.render(); };
+  App.actions.selDay = function (el) { App.ui.sel = el.dataset.d; App.renderScreen(); };
+
+  App.actions.pickMonth = function () { monthSheet(App.ui.month.slice(0, 4)); };
+  function monthSheet(year) {
+    var cur = App.ui.month;
+    var h = '<div class="sheet-h"><button class="ib" data-act="pmYear" data-d="-1">' + icon('back') + '</button><h3>' + year + '</h3><button class="ib" data-act="pmYear" data-d="1">' + icon('fwd') + '</button></div><div class="chips" style="justify-content:center">';
+    App.MONTHS.forEach(function (m, i) {
+      var mk = year + '-' + App.pad(i + 1);
+      h += '<button class="cchip ' + (mk === cur ? 'sel' : '') + '" style="width:30%;justify-content:center" data-act="pmSet" data-mk="' + mk + '">' + m + '</button>';
+    });
+    App.openSheet(h + '</div>');
+  }
+  App.actions.pmYear = function (el) {
+    var y = $('.sheet-h h3').textContent;
+    monthSheet(String(+y + (+el.dataset.d)));
+  };
+  App.actions.pmSet = function (el) { App.ui.month = el.dataset.mk; fixSel(); App.closeSheet(); App.render(); };
+
+  // ---------- top bar ----------
+  App.renderTop = function () {
+    var u = App.ui, el = $('#topbar'), h = '';
+    if (u.tab === 'accounts' || u.tab === 'more') {
+      h = '<div class="tb-row"><div class="tb-title">' + (u.tab === 'more' ? 'More' : 'Accounts') + '</div>' +
+        (u.tab === 'accounts' ? '<div class="tb-right"><button class="ib" data-act="addAccount" aria-label="Add account">' + icon('plus') + '</button></div>' : '') + '</div>';
+    } else {
+      h = '<div class="tb-row"><button class="ib" data-act="prevMonth" aria-label="Previous month">' + icon('back') + '</button>' +
+        '<button class="tb-month" data-act="pickMonth">' + App.monthLabel(u.month) + '</button>' +
+        '<button class="ib" data-act="nextMonth" aria-label="Next month">' + icon('fwd') + '</button>' +
+        '<div class="tb-right">' + (u.tab === 'home' ? '<button class="ib" data-act="toggleSearch" aria-label="Search">' + icon('search') + '</button>' : '') + '</div></div>';
+      if (u.tab === 'home') {
+        h += '<div class="seg">' + [['daily', 'Daily'], ['calendar', 'Calendar'], ['monthly', 'Monthly']].map(function (s) {
+          return '<button class="' + (u.sub === s[0] ? 'on' : '') + '" data-act="subTab" data-v="' + s[0] + '">' + s[1] + '</button>';
+        }).join('') + '</div>';
+        if (u.searchOpen) h += '<input id="searchBox" class="searchbox" data-input="search" placeholder="Search notes, categories, amounts…" value="' + esc(u.search) + '">';
+        if (App.db.accounts.length > 1) {
+          h += '<div class="filters"><select class="pill" data-change="accFilter"><option value="all">All accounts</option>' +
+            App.db.accounts.map(function (a) { return '<option value="' + a.id + '"' + (u.acc === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>'; }).join('') + '</select></div>';
+        }
+        var t = App.totals(u.month, u.acc);
+        h += '<div class="cards"><div class="sumcard"><small>Income</small><b>' + money(t.income) + '</b></div><div class="sumcard"><small>Expenses</small><b>' + money(t.expense) + '</b></div><div class="sumcard bal"><small>Balance</small><b>' + money(t.balance) + '</b></div></div>';
+      }
+    }
+    el.innerHTML = h;
+  };
+
+  App.renderNav = function () {
+    var items = [['home', 'list', 'Records'], ['budget', 'envelope', 'Budget'], ['accounts', 'wallet', 'Accounts'], ['reports', 'chart', 'Reports'], ['more', 'more', 'More']];
+    $('#bottomnav').innerHTML = items.map(function (i) {
+      return '<button class="' + (App.ui.tab === i[0] ? 'on' : '') + '" data-act="tab" data-t="' + i[0] + '">' + icon(i[1]) + '<span>' + i[2] + '</span></button>';
+    }).join('');
+    $('#fab').style.display = (App.ui.tab === 'more') ? 'none' : '';
+  };
+
+  App.render = function () {
+    App.renderTop(); App.renderScreen(); App.renderNav();
+    if (App.renderPage && App.ui.page) App.renderPage();
+  };
+
+  App.renderScreen = function () {
+    var t = App.ui.tab, fn = { home: renderHome, budget: renderBudget, accounts: renderAccounts, reports: renderReports, more: renderMore }[t];
+    $('#screen').innerHTML = fn();
+  };
+
+  // ---------- shared row ----------
+  App.txRow = function (t, showDate) {
+    var isT = t.type === 'transfer';
+    var c = App.cat(t.categoryId);
+    var ico = isT ? '🔁' : (t.loanId ? '🤝' : (c ? c.icon : '🏷️'));
+    var color = isT ? '#2f80ed' : (c ? c.color : '#94a3b8');
+    var title = isT ? 'Transfer' : (c ? c.name : (t.loanId ? 'Loan' : 'Uncategorised'));
+    var a = App.acc(t.accountId), to = App.acc(t.toAccountId);
+    var sub = isT ? (a ? esc(a.name) : '?') + ' → ' + (to ? esc(to.name) : '?') : (a ? esc(a.name) : '');
+    if (showDate) sub += ' · ' + App.shortDate(t.date);
+    var cls = isT ? 'tr' : (t.type === 'income' ? 'in' : 'ex');
+    var sign = t.type === 'income' ? '+' : (t.type === 'expense' ? '-' : '');
+    return '<div class="row" data-act="editTx" data-id="' + t.id + '"><div class="ico" style="background:' + color + '22;color:' + color + '">' + ico + '</div>' +
+      '<div class="row-main"><div class="row-title">' + esc(title) + (t.note ? '<span class="dot">·</span><span class="row-note">' + esc(t.note) + '</span>' : '') + '</div><div class="row-sub">' + sub + '</div></div>' +
+      '<div class="amt ' + cls + '">' + sign + money(t.amount) + '</div></div>';
+  };
+  function empty(emoji, text) { return '<div class="empty"><div class="big">' + emoji + '</div><p>' + text + '</p></div>'; }
+
+  // ---------- HOME ----------
+  function renderHome() {
+    var u = App.ui;
+    if (u.search) return searchResults();
+    if (u.sub === 'calendar') return renderCalendar();
+    if (u.sub === 'monthly') return renderMonthly();
+    return renderDaily();
+  }
+  function searchResults() {
+    var q = App.ui.search.trim().toLowerCase();
+    var list = App.txIn(null, App.ui.acc).filter(function (t) {
+      var c = App.cat(t.categoryId);
+      return (t.note || '').toLowerCase().indexOf(q) >= 0 || (c && c.name.toLowerCase().indexOf(q) >= 0) || String(t.amount).indexOf(q) >= 0;
+    }).slice(0, 100);
+    if (!list.length) return empty('🔍', 'No matching transactions');
+    return '<div class="daygroup">' + list.map(function (t) { return App.txRow(t, true); }).join('') + '</div>';
+  }
+  function dayGroups(list) {
+    var g = {}, order = [];
+    list.forEach(function (t) { if (!g[t.date]) { g[t.date] = []; order.push(t.date); } g[t.date].push(t); });
+    return order.map(function (d) {
+      var dt = App.parse(d), inc = 0, exp = 0;
+      g[d].forEach(function (t) { if (t.type === 'income') inc += t.amount; else if (t.type === 'expense') exp += t.amount; });
+      return '<section class="daygroup"><div class="dayhead"><div class="dnum">' + dt.getDate() + '</div><div class="dmeta"><span class="chip">' + App.DAYS[dt.getDay()] + '</span>' + App.MONTHS[dt.getMonth()] + ' ' + dt.getFullYear() + '</div>' +
+        '<div class="dtot">' + (inc ? '<span class="in">+' + money(inc) + '</span>' : '') + (exp ? '<span class="ex">-' + money(exp) + '</span>' : '') + '</div></div>' +
+        g[d].map(function (t) { return App.txRow(t); }).join('') + '</section>';
+    }).join('');
+  }
+  function renderDaily() {
+    var list = App.txIn(App.ui.month, App.ui.acc);
+    if (!list.length) return empty('🧾', 'No transactions in ' + App.monthLabel(App.ui.month) + '.<br>Tap <b>+</b> to add your first one.');
+    return dayGroups(list);
+  }
+  var cf = function (n) {
+    n = Math.abs(n);
+    if (n >= 1e7) return (n / 1e7).toFixed(1).replace(/\.0$/, '') + 'Cr';
+    if (n >= 1e5) return (n / 1e5).toFixed(1).replace(/\.0$/, '') + 'L';
+    if (n >= 1e4) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(Math.round(n));
+  };
+  function renderCalendar() {
+    var u = App.ui, mk = u.month, p = mk.split('-').map(Number);
+    fixSel();
+    var list = App.txIn(mk, u.acc), agg = {};
+    list.forEach(function (t) {
+      if (t.type === 'transfer') return;
+      if (u.acc !== 'all' && t.accountId !== u.acc) return;
+      var a = agg[t.date] || (agg[t.date] = { i: 0, e: 0 });
+      if (t.type === 'income') a.i += t.amount; else a.e += t.amount;
+    });
+    var first = new Date(p[0], p[1] - 1, 1), off = (first.getDay() + 6) % 7, days = new Date(p[0], p[1], 0).getDate();
+    var total = Math.ceil((off + days) / 7) * 7, today = App.today();
+    var h = '<div class="cal"><div class="cal-h">' + ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) { return '<div>' + d + '</div>'; }).join('') + '</div><div class="cal-g">';
+    for (var i = 0; i < total; i++) {
+      var dt = new Date(p[0], p[1] - 1, 1 - off + i), key = App.ymd(dt), inMonth = dt.getMonth() === p[1] - 1;
+      if (!inMonth) { h += '<div class="cell off"><div class="cn">' + dt.getDate() + '</div></div>'; continue; }
+      var a = agg[key], net = a ? a.i - a.e : 0;
+      h += '<div class="cell ' + (key === u.sel ? 'sel' : '') + ' ' + (key === today ? 'today' : '') + '" data-act="selDay" data-d="' + key + '"><div class="cn">' + dt.getDate() + '</div>' +
+        (a ? (a.i ? '<div class="ci">' + cf(a.i) + '</div>' : '') + (a.e ? '<div class="ce">' + cf(a.e) + '</div>' : '') + '<div class="cb">' + (net < 0 ? '-' : '') + cf(net) + '</div>' : '') + '</div>';
+    }
+    h += '</div></div>';
+    var day = list.filter(function (t) { return t.date === u.sel; });
+    h += '<div class="day-panel-h"><b>' + App.dateLabel(u.sel) + '</b><button class="btn primary" style="flex:none;padding:8px 14px" data-act="addTxOn" data-d="' + u.sel + '">+ Add</button></div>';
+    h += day.length ? '<div class="daygroup">' + day.map(function (t) { return App.txRow(t); }).join('') + '</div>' : '<div class="empty" style="padding:20px">Nothing recorded on this day</div>';
+    return h;
+  }
+  App.actions.addTxOn = function (el) { App.openTx({ date: el.dataset.d }); };
+
+  function renderMonthly() {
+    var y = App.ui.month.slice(0, 4), yi = 0, ye = 0, rows = '';
+    for (var m = 1; m <= 12; m++) {
+      var mk = y + '-' + App.pad(m), t = App.totals(mk, App.ui.acc);
+      yi += t.income; ye += t.expense;
+      rows += '<div class="mrow ' + (mk === App.ui.month ? 'cur' : '') + '" data-act="gotoMonth" data-mk="' + mk + '"><span><b>' + App.MONTHS[m - 1] + '</b></span><span class="in">' + (t.income ? money(t.income) : '–') + '</span><span class="ex">' + (t.expense ? money(t.expense) : '–') + '</span><span>' + ((t.income || t.expense) ? money(t.balance) : '–') + '</span></div>';
+    }
+    return '<div class="hero"><small>' + y + ' summary</small><div class="big">' + money(yi - ye) + '</div><div class="hero-grid"><div>Income<b>' + money(yi) + '</b></div><div>Expenses<b>' + money(ye) + '</b></div><div>Saved<b>' + (yi > 0 ? Math.round((yi - ye) / yi * 100) + '%' : '–') + '</b></div></div></div>' +
+      '<div class="card" style="padding:8px 8px"><div class="mrow h"><span>Month</span><span>Income</span><span>Expense</span><span>Balance</span></div>' + rows + '</div>';
+  }
+  App.actions.gotoMonth = function (el) { App.ui.month = el.dataset.mk; App.ui.sub = 'daily'; fixSel(); App.render(); };
+
+  // ---------- BUDGET (envelopes) ----------
+  function renderBudget() {
+    var mk = App.ui.month, db = App.db;
+    var t = App.totals(mk, 'all');
+    var budgeted = 0, spent = 0, usedCats = [];
+    db.envelopes.forEach(function (e) { budgeted += e.limit; spent += App.envSpent(e, mk); usedCats = usedCats.concat(e.categoryIds); });
+    var unb = db.transactions.filter(function (x) { return x.type === 'expense' && x.date.indexOf(mk) === 0 && usedCats.indexOf(x.categoryId) < 0; });
+    var unbTotal = r2(unb.reduce(function (s, x) { return s + x.amount; }, 0));
+    var h = '<div class="hero"><small>Left to spend in envelopes</small><div class="big">' + money(budgeted - spent) + '</div><div class="hero-grid"><div>Budgeted<b>' + money(budgeted) + '</b></div><div>Spent<b>' + money(spent) + '</b></div><div>Income<b>' + money(t.income) + '</b></div></div></div>';
+    if (!db.envelopes.length) {
+      h += empty('✉️', 'Envelopes cap what you spend in each area every month.<br>Create one to get started.');
+    }
+    db.envelopes.forEach(function (e) {
+      var s = App.envSpent(e, mk), pct = e.limit > 0 ? Math.min(100, s / e.limit * 100) : (s > 0 ? 100 : 0), cls = s > e.limit ? 'over' : (pct >= 80 ? 'warn' : ''), left = r2(e.limit - s);
+      h += '<div class="env" data-act="envDetail" data-id="' + e.id + '"><div class="env-top"><div class="ico" style="background:var(--b100)">' + e.icon + '</div><div class="env-name">' + esc(e.name) + '</div><div class="env-left ' + (left < 0 ? 'ex' : '') + '">' + (left < 0 ? 'Over ' + money(-left) : money(left) + ' left') + '</div></div>' +
+        '<div class="bar ' + cls + '"><i style="width:' + pct + '%"></i></div><div class="env-meta"><span>' + money(s) + ' spent</span><span>of ' + money(e.limit) + '</span></div></div>';
+    });
+    if (unbTotal > 0) {
+      h += '<div class="env" data-act="unbudgeted"><div class="env-top"><div class="ico" style="background:var(--b100)">📦</div><div class="env-name">Not in any envelope</div><div class="env-left">' + money(unbTotal) + '</div></div></div>';
+    }
+    h += '<button class="btn primary block" data-act="addEnvelope">+ New envelope</button><p class="muted" style="text-align:center;font-size:12px;margin-top:14px">Each envelope resets on the 1st of every month.</p>';
+    return h;
+  }
+
+  // ---------- ACCOUNTS ----------
+  function renderAccounts() {
+    var db = App.db;
+    if (!db.accounts.length) return empty('🏦', 'No accounts yet. Tap + to add one.');
+    var assets = 0, debts = 0;
+    db.accounts.forEach(function (a) { var b = App.accBalance(a); if (b >= 0) assets += b; else debts += b; });
+    var h = '<div class="hero"><small>Net worth</small><div class="big">' + money(assets + debts) + '</div><div class="hero-grid"><div>Assets<b>' + money(assets) + '</b></div><div>Owed<b>' + money(-debts) + '</b></div><div>Accounts<b>' + db.accounts.length + '</b></div></div></div>';
+    if (db.accounts.length > 1) h += '<button class="btn ghost block" style="margin:0 0 12px" data-act="newTransfer">🔁 Transfer between accounts</button>';
+    h += '<div class="daygroup">' + db.accounts.map(function (a) {
+      var b = App.accBalance(a);
+      return '<div class="row" data-act="accDetail" data-id="' + a.id + '"><div class="ico" style="background:' + a.color + '22;color:' + a.color + '">' + App.accIcon(a.type) + '</div><div class="row-main"><div class="row-title">' + esc(a.name) + '</div><div class="row-sub">' + (App.ACC_TYPES.filter(function (x) { return x[0] === a.type; })[0] || ['', 'Account'])[1] + '</div></div><div class="amt ' + (b < 0 ? 'ex' : '') + '">' + money(b) + '</div></div>';
+    }).join('') + '</div>';
+    return h;
+  }
+  App.actions.newTransfer = function () { App.openTx({ type: 'transfer' }); };
+
+  // ---------- REPORTS ----------
+  function renderReports() {
+    var u = App.ui, mk = u.month, type = u.repType, db = App.db;
+    var list = db.transactions.filter(function (t) { return t.type === type && t.date.indexOf(mk) === 0; });
+    var byCat = {}, total = 0;
+    list.forEach(function (t) { var k = t.categoryId || (t.loanId ? '_loan' : '_none'); byCat[k] = (byCat[k] || 0) + t.amount; total += t.amount; });
+    var items = Object.keys(byCat).map(function (k) {
+      var c = App.cat(k);
+      return { name: c ? c.name : (k === '_loan' ? 'Loans' : 'Uncategorised'), icon: c ? c.icon : (k === '_loan' ? '🤝' : '🏷️'), color: c ? c.color : '#94a3b8', v: r2(byCat[k]) };
+    }).sort(function (a, b) { return b.v - a.v; });
+    var tt = App.totals(mk, 'all'), days = new Date(+mk.slice(0, 4), +mk.slice(5), 0).getDate();
+    var biggest = db.transactions.filter(function (t) { return t.type === 'expense' && t.date.indexOf(mk) === 0; }).sort(function (a, b) { return b.amount - a.amount; })[0];
+    var h = '<div class="stats"><div class="stat"><small>Saved</small><b>' + (tt.income > 0 ? Math.round(tt.balance / tt.income * 100) + '%' : '–') + '</b></div><div class="stat"><small>Avg / day</small><b>' + money(tt.expense / days) + '</b></div><div class="stat"><small>Biggest</small><b>' + (biggest ? money(biggest.amount) : '–') + '</b></div></div>';
+    h += '<div class="seg"><button class="exp ' + (type === 'expense' ? 'on' : '') + '" data-act="repType" data-v="expense">Expenses</button><button class="inc ' + (type === 'income' ? 'on' : '') + '" data-act="repType" data-v="income">Income</button></div>';
+    if (!total) {
+      h += empty('📊', 'No ' + type + ' recorded in ' + App.monthLabel(mk));
+    } else {
+      var cum = 0, segs = items.map(function (it) {
+        var p = it.v / total * 100, s = '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="' + it.color + '" stroke-width="6" stroke-dasharray="' + p + ' ' + (100 - p) + '" stroke-dashoffset="' + (25 - cum) + '"></circle>';
+        cum += p; return s;
+      }).join('');
+      h += '<div class="card"><svg class="donut" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--line)" stroke-width="6"/>' + segs + '<text x="21" y="20.5" class="dt1">' + (type === 'expense' ? 'Spent' : 'Earned') + '</text><text x="21" y="26" class="dt2">' + App.fmt(total).replace(/\.00$/, '') + '</text></svg><div style="margin-top:10px">' +
+        items.map(function (it) { return '<div class="leg"><i style="background:' + it.color + '"></i><span>' + it.icon + ' ' + esc(it.name) + '</span><em>' + Math.round(it.v / total * 100) + '%</em><b>' + money(it.v) + '</b></div>'; }).join('') + '</div></div>';
+    }
+    // 6-month bars
+    var months = [], i;
+    for (i = 5; i >= 0; i--) months.push(App.shiftMonth(mk, -i));
+    var data = months.map(function (m) { return App.totals(m, 'all'); });
+    var max = Math.max.apply(null, data.map(function (d) { return Math.max(d.income, d.expense); }).concat([1]));
+    var bars = data.map(function (d, idx) {
+      var x = 12 + idx * 51, hi = d.income / max * 110, he = d.expense / max * 110;
+      return '<rect x="' + x + '" y="' + (130 - hi) + '" width="18" height="' + hi + '" rx="4" fill="var(--income)"/><rect x="' + (x + 21) + '" y="' + (130 - he) + '" width="18" height="' + he + '" rx="4" fill="var(--b500)"/><text x="' + (x + 20) + '" y="146">' + App.MONTHS[+months[idx].slice(5) - 1] + '</text>';
+    }).join('');
+    h += '<div class="card"><h4>Income vs expenses · 6 months</h4><svg class="bars" viewBox="0 0 320 154" width="100%">' + bars + '</svg><div class="leg" style="justify-content:center;gap:18px"><span style="flex:none"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--income);margin-right:6px"></i>Income</span><span style="flex:none"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--b500);margin-right:6px"></i>Expenses</span></div></div>';
+    return h;
+  }
+  App.actions.repType = function (el) { App.ui.repType = el.dataset.v; App.renderScreen(); };
+
+  // ---------- MORE ----------
+  function renderMore() {
+    var items = [
+      ['bills', '🔔', 'Bills & subscriptions', 'Recurring payments with reminders'],
+      ['goals', '🎯', 'Savings goals', 'Track what you are saving for'],
+      ['loans', '🤝', 'Loans & lend / borrow', 'Money you owe or are owed'],
+      ['categories', '🏷️', 'Categories', 'Create and edit your own'],
+      ['backup', '☁️', 'Backup & restore', 'Protect your data'],
+      ['settings', '⚙️', 'Settings', 'Name, currency, app lock']
+    ];
+    return items.map(function (i) {
+      return '<button class="menu-item" data-act="openPage" data-p="' + i[0] + '"><div class="ico" style="background:var(--b100)">' + i[1] + '</div><div><b>' + i[2] + '</b><small>' + i[3] + '</small></div></button>';
+    }).join('');
+  }
+})(window.App);
+</script>
+<script>'use strict';
+(function (App) {
+  var $ = App.$, esc = App.esc, money = App.money, icon = App.icon;
+
+  function accOptions(sel, exclude) {
+    return App.db.accounts.filter(function (a) { return a.id !== exclude; }).map(function (a) {
+      return '<option value="' + a.id + '"' + (a.id === sel ? ' selected' : '') + '>' + esc(a.name) + ' (' + money(App.accBalance(a)) + ')</option>';
+    }).join('');
+  }
+  function swatches(sel) {
+    return '<div class="chips" id="swatches">' + App.COLORS.map(function (c) {
+      return '<button class="swatch ' + (c === sel ? 'sel' : '') + '" style="background:' + c + '" data-act="pickColor" data-c="' + c + '"></button>';
+    }).join('') + '</div>';
+  }
+  function emojiGrid(sel) {
+    return '<div class="chips" id="emojis">' + App.EMOJIS.map(function (e) {
+      return '<button class="emo ' + (e === sel ? 'sel' : '') + '" data-act="pickEmoji" data-e="' + e + '">' + e + '</button>';
+    }).join('') + '</div>';
+  }
+  App.actions.pickColor = function (el) {
+    App.$$('#swatches .swatch').forEach(function (s) { s.classList.remove('sel'); });
+    el.classList.add('sel');
+  };
+  App.actions.pickEmoji = function (el) {
+    App.$$('#emojis .emo').forEach(function (s) { s.classList.remove('sel'); });
+    el.classList.add('sel');
+  };
+  var pickedColor = function () { var e = $('#swatches .sel'); return e ? e.dataset.c : App.COLORS[0]; };
+  var pickedEmoji = function () { var e = $('#emojis .sel'); return e ? e.dataset.e : '🏷️'; };
+  App.formHelpers = { accOptions: accOptions, swatches: swatches, emojiGrid: emojiGrid, pickedColor: pickedColor, pickedEmoji: pickedEmoji };
+
+  // ---------- TRANSACTION SHEET ----------
+  var cur = null;
+  App.openTx = function (opts) {
+    var db = App.db;
+    if (!db.accounts.length) { App.toast('Add an account first'); App.setTab('accounts'); return; }
+    opts = opts || {};
+    if (opts.id) {
+      var t = db.transactions.filter(function (x) { return x.id === opts.id; })[0];
+      if (!t) return;
+      cur = Object.assign({}, t, { amount: String(t.amount) });
+    } else {
+      var u = App.ui, defDate = (u.tab === 'home' && u.sub === 'calendar') ? u.sel : App.today();
+      var acc = (u.acc !== 'all' && App.acc(u.acc)) ? u.acc : ((App.acc(db.settings.lastAcc) ? db.settings.lastAcc : db.accounts[0].id));
+      cur = Object.assign({ type: 'expense', amount: '', date: defDate, accountId: acc, toAccountId: '', categoryId: '', note: '' }, opts);
+    }
+    if (cur.type === 'transfer' && !cur.toAccountId) {
+      var other = db.accounts.filter(function (a) { return a.id !== cur.accountId; })[0];
+      cur.toAccountId = other ? other.id : '';
+    }
+    drawTx();
+  };
+  function readTx() {
+    var g = function (id) { var e = $('#' + id); return e ? e.value : undefined; };
+    var a = g('f-amt'); if (a !== undefined) cur.amount = a;
+    var d = g('f-date'); if (d) cur.date = d;
+    var ac = g('f-acc'); if (ac) cur.accountId = ac;
+    var to = g('f-to'); if (to) cur.toAccountId = to;
+    var n = g('f-note'); if (n !== undefined) cur.note = n;
+  }
+  function drawTx() {
+    var db = App.db, d = cur, isT = d.type === 'transfer';
+    var cats = db.categories.filter(function (c) { return c.type === d.type; });
+    var h = '<div class="sheet-h"><h3>' + (d.id ? 'Edit' : 'Add') + ' transaction</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="seg">' + [['expense', 'Expense', 'exp'], ['income', 'Income', 'inc'], ['transfer', 'Transfer', '']].map(function (s) {
+        return '<button class="' + s[2] + ' ' + (d.type === s[0] ? 'on' : '') + '" data-act="txType" data-v="' + s[0] + '">' + s[1] + '</button>';
+      }).join('') + '</div>' +
+      '<div class="amt-box"><span>' + esc(db.settings.currency) + '</span><input id="f-amt" inputmode="decimal" placeholder="0.00" value="' + esc(d.amount) + '" autocomplete="off"></div>' +
+      '<div class="two"><div><label class="lbl">Date</label><input class="inp" type="date" id="f-date" value="' + d.date + '"></div>' +
+      '<div><label class="lbl">' + (isT ? 'From' : 'Account') + '</label><select class="inp" id="f-acc">' + accOptions(d.accountId) + '</select></div></div>';
+    if (isT) {
+      h += '<label class="lbl">To account</label><select class="inp" id="f-to">' + accOptions(d.toAccountId, d.accountId) + '</select>';
+    } else {
+      h += '<label class="lbl">Category</label><div class="chips" id="catChips">' + cats.map(function (c) {
+        return '<button class="cchip ' + (c.id === d.categoryId ? 'sel' : '') + '" data-act="pickCat" data-id="' + c.id + '"><span>' + c.icon + '</span>' + esc(c.name) + '</button>';
+      }).join('') + '<button class="cchip add" data-act="newCatFromTx">+ New</button></div>';
+    }
+    h += '<label class="lbl">Note</label><input class="inp" id="f-note" placeholder="Optional" value="' + esc(d.note) + '" maxlength="120">' +
+      '<div class="btn-row">' + (d.id ? '<button class="btn danger" data-act="delTx" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" data-act="saveTx">Save</button></div>';
+    App.openSheet(h);
+  }
+  App.actions.addTx = function () { App.openTx({}); };
+  App.actions.editTx = function (el) { App.openTx({ id: el.dataset.id }); };
+  App.actions.txType = function (el) {
+    readTx();
+    cur.type = el.dataset.v;
+    var c = App.cat(cur.categoryId);
+    if (!c || c.type !== cur.type) cur.categoryId = '';
+    if (cur.type === 'transfer') {
+      cur.categoryId = '';
+      if (!cur.toAccountId || cur.toAccountId === cur.accountId) {
+        var o = App.db.accounts.filter(function (a) { return a.id !== cur.accountId; })[0];
+        cur.toAccountId = o ? o.id : '';
+      }
+    }
+    drawTx();
+  };
+  App.actions.pickCat = function (el) {
+    cur.categoryId = (cur.categoryId === el.dataset.id) ? '' : el.dataset.id;
+    App.$$('#catChips .cchip').forEach(function (c) { c.classList.toggle('sel', c.dataset.id === cur.categoryId); });
+  };
+  App.actions.newCatFromTx = function () {
+    readTx();
+    App.openCategory({ type: cur.type, lockType: true, onDone: function (c) { if (c) cur.categoryId = c.id; drawTx(); } });
+  };
+  App.actions.saveTx = function () {
+    readTx();
+    var amt = App.evalAmount(cur.amount);
+    if (!(amt > 0)) { App.toast('Enter an amount greater than 0'); return; }
+    if (!cur.date) { App.toast('Pick a date'); return; }
+    if (cur.type === 'transfer') {
+      if (!cur.toAccountId || cur.toAccountId === cur.accountId) { App.toast('Choose two different accounts'); return; }
+    }
+    var rec = { type: cur.type, amount: amt, date: cur.date, accountId: cur.accountId, toAccountId: cur.type === 'transfer' ? cur.toAccountId : '', categoryId: cur.type === 'transfer' ? '' : (cur.categoryId || ''), note: (cur.note || '').trim() };
+    if (cur.id) {
+      var t = App.db.transactions.filter(function (x) { return x.id === cur.id; })[0];
+      if (t) Object.assign(t, rec);
+    } else {
+      App.addTx(rec);
+    }
+    App.db.settings.lastAcc = cur.accountId;
+    App.save(); App.closeSheet();
+    if (cur.date.slice(0, 7) !== App.ui.month && App.ui.tab === 'home') { App.ui.month = cur.date.slice(0, 7); }
+    App.ui.sel = cur.date;
+    App.render();
+    App.toast(cur.id ? 'Updated' : 'Saved');
+  };
+  App.actions.delTx = function () {
+    var id = cur.id, db = App.db;
+    var idx = db.transactions.findIndex(function (x) { return x.id === id; });
+    if (idx < 0) return;
+    var removed = db.transactions.splice(idx, 1)[0];
+    App.save(); App.closeSheet(); App.render();
+    App.toast('Deleted', function () { db.transactions.push(removed); App.save(); App.render(); });
+  };
+
+  // ---------- ACCOUNTS ----------
+  App.actions.addAccount = function () { App.openAccount({}); };
+  App.openAccount = function (o, onDone) {
+    var a = o.id ? App.acc(o.id) : { name: '', type: 'bank', opening: 0, color: App.COLORS[0] };
+    var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' account</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<label class="lbl">Name</label><input class="inp" id="a-name" value="' + esc(a.name) + '" placeholder="e.g. HDFC Savings" maxlength="30">' +
+      '<label class="lbl">Type</label><select class="inp" id="a-type">' + App.ACC_TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (a.type === t[0] ? ' selected' : '') + '>' + t[2] + ' ' + t[1] + '</option>'; }).join('') + '</select>' +
+      '<label class="lbl">Opening balance' + (o.id ? '' : ' (use a minus if you owe money)') + '</label><input class="inp" id="a-open" inputmode="decimal" value="' + (a.opening || '') + '" placeholder="0.00">' +
+      '<label class="lbl">Colour</label>' + swatches(a.color) +
+      '<div class="btn-row">' + (o.id ? '<button class="btn danger" data-act="delAccount" data-id="' + o.id + '" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="a-save">Save</button></div>';
+    App.openSheet(h, function (el) {
+      $('#a-save', el).onclick = function () {
+        var name = $('#a-name', el).value.trim();
+        if (!name) { App.toast('Give the account a name'); return; }
+        var op = $('#a-open', el).value.trim() ? App.evalAmount($('#a-open', el).value) : 0;
+        if (isNaN(op)) { App.toast('Opening balance is not a number'); return; }
+        var rec = { name: name, type: $('#a-type', el).value, opening: op, color: pickedColor() };
+        if (o.id) Object.assign(App.acc(o.id), rec);
+        else App.db.accounts.push(Object.assign({ id: App.uid() }, rec));
+        App.save(); App.closeSheet(); App.render();
+        if (onDone) onDone();
+      };
+    });
+  };
+  App.actions.delAccount = function (el) {
+    var id = el.dataset.id, a = App.acc(id);
+    var n = App.db.transactions.filter(function (t) { return t.accountId === id || t.toAccountId === id; }).length;
+    var b = App.db.bills.filter(function (x) { return x.accountId === id; }).length;
+    if (n || b) { App.toast('This account has ' + n + ' transactions' + (b ? ' and ' + b + ' bills' : '') + ' – remove those first'); return; }
+    App.confirmSheet('Delete "' + a.name + '"?', 'This cannot be undone.', 'Delete', function () {
+      App.db.accounts = App.db.accounts.filter(function (x) { return x.id !== id; });
+      if (App.ui.acc === id) App.ui.acc = 'all';
+      App.save(); App.render();
+    });
+  };
+  App.actions.accDetail = function (el) {
+    var a = App.acc(el.dataset.id), tx = App.txIn(null, a.id).slice(0, 8);
+    var h = '<div class="sheet-h"><h3>' + App.accIcon(a.type) + ' ' + esc(a.name) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="hero" style="margin:6px 0 10px"><small>Balance</small><div class="big" style="margin-bottom:0">' + money(App.accBalance(a)) + '</div></div>' +
+      '<div class="btn-row" style="margin:0 0 10px"><button class="btn ghost" data-act="editAccount" data-id="' + a.id + '">Edit</button>' + (App.db.accounts.length > 1 ? '<button class="btn ghost" data-act="transferFrom" data-id="' + a.id + '">Transfer</button>' : '') + '<button class="btn ghost" data-act="viewAccount" data-id="' + a.id + '">All records</button></div>' +
+      (tx.length ? '<div class="section-t" style="margin-top:6px">Recent</div><div class="daygroup" style="box-shadow:none">' + tx.map(function (t) { return App.txRow(t, true); }).join('') + '</div>' : '');
+    App.openSheet(h);
+  };
+  App.actions.editAccount = function (el) { App.closeSheet(); App.openAccount({ id: el.dataset.id }); };
+  App.actions.transferFrom = function (el) { App.closeSheet(); App.openTx({ type: 'transfer', accountId: el.dataset.id }); };
+  App.actions.viewAccount = function (el) { App.closeSheet(); App.ui.acc = el.dataset.id; App.ui.sub = 'daily'; App.setTab('home'); };
+
+  // ---------- CATEGORIES ----------
+  App.openCategory = function (o) {
+    var c = o.id ? App.cat(o.id) : { name: '', type: o.type || 'expense', icon: '🏷️', color: App.COLORS[Math.floor(Math.random() * App.COLORS.length)] };
+    var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' category</h3><button class="ib" data-act="catCancel">' + icon('close') + '</button></div>' +
+      (o.lockType ? '' : '<div class="seg" id="c-type">' + [['expense', 'Expense', 'exp'], ['income', 'Income', 'inc']].map(function (s) { return '<button class="' + s[2] + ' ' + (c.type === s[0] ? 'on' : '') + '" data-act="catType" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>') +
+      '<label class="lbl">Name</label><input class="inp" id="c-name" value="' + esc(c.name) + '" placeholder="e.g. Coffee" maxlength="26">' +
+      '<label class="lbl">Icon</label>' + emojiGrid(c.icon) +
+      '<label class="lbl">Colour</label>' + swatches(c.color) +
+      '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="c-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="c-save">Save</button></div>';
+    App._catCb = o.onDone;
+    App.openSheet(h, function (el) {
+      $('#c-save', el).onclick = function () {
+        var name = $('#c-name', el).value.trim();
+        if (!name) { App.toast('Give the category a name'); return; }
+        var typeEl = $('#c-type .on', el), type = o.lockType ? o.type : (typeEl ? typeEl.dataset.v : c.type);
+        var rec = { name: name, type: type, icon: pickedEmoji(), color: pickedColor() }, saved;
+        if (o.id) { saved = App.cat(o.id); Object.assign(saved, rec); }
+        else { saved = Object.assign({ id: App.uid() }, rec); App.db.categories.push(saved); }
+        App.save(); App.closeSheet(); App.render();
+        if (o.onDone) o.onDone(saved);
+      };
+      var del = $('#c-del', el);
+      if (del) del.onclick = function () {
+        var n = App.catUsage(o.id);
+        App.confirmSheet('Delete "' + c.name + '"?', n ? n + ' transactions use it and will become Uncategorised.' : 'This cannot be undone.', 'Delete', function () {
+          App.db.categories = App.db.categories.filter(function (x) { return x.id !== o.id; });
+          App.db.envelopes.forEach(function (e) { e.categoryIds = e.categoryIds.filter(function (x) { return x !== o.id; }); });
+          App.db.transactions.forEach(function (t) { if (t.categoryId === o.id) t.categoryId = ''; });
+          App.save(); App.render();
+          if (o.onDone) o.onDone(null);
+        });
+      };
+    });
+  };
+  App.actions.catType = function (el) {
+    App.$$('#c-type button').forEach(function (b) { b.classList.toggle('on', b === el); });
+  };
+  App.actions.catCancel = function () {
+    var cb = App._catCb; App._catCb = null; App.closeSheet();
+    if (cb) cb(null);
+  };
+
+  // ---------- ENVELOPES ----------
+  App.actions.addEnvelope = function () { App.openEnvelope({}); };
+  App.openEnvelope = function (o) {
+    var db = App.db;
+    var e = o.id ? db.envelopes.filter(function (x) { return x.id === o.id; })[0] : { name: '', icon: '✉️', limit: '', categoryIds: [] };
+    var taken = [];
+    db.envelopes.forEach(function (x) { if (x.id !== o.id) taken = taken.concat(x.categoryIds); });
+    var cats = db.categories.filter(function (c) { return c.type === 'expense'; });
+    var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' envelope</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<label class="lbl">Name</label><input class="inp" id="e-name" value="' + esc(e.name) + '" placeholder="e.g. Eating out" maxlength="26">' +
+      '<label class="lbl">Monthly limit (' + esc(db.settings.currency) + ')</label><input class="inp" id="e-limit" inputmode="decimal" value="' + (e.limit || '') + '" placeholder="0.00">' +
+      '<label class="lbl">Icon</label>' + emojiGrid(e.icon) +
+      '<label class="lbl">Spending categories that draw from it</label>' +
+      (cats.length ? '<div class="chips" id="e-cats">' + cats.map(function (c) {
+        return '<button class="cchip ' + (e.categoryIds.indexOf(c.id) >= 0 ? 'sel' : '') + ' ' + (taken.indexOf(c.id) >= 0 ? 'dis' : '') + '" data-act="toggleChip" data-id="' + c.id + '"><span>' + c.icon + '</span>' + esc(c.name) + '</button>';
+      }).join('') + '</div>' : '<p class="muted">No expense categories yet – add some in More → Categories.</p>') +
+      '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="e-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="e-save">Save</button></div>';
+    App.openSheet(h, function (el) {
+      $('#e-save', el).onclick = function () {
+        var name = $('#e-name', el).value.trim(), lim = App.evalAmount($('#e-limit', el).value);
+        if (!name) { App.toast('Give the envelope a name'); return; }
+        if (!(lim >= 0)) { App.toast('Enter a monthly limit'); return; }
+        var ids = App.$$('#e-cats .cchip.sel', el).map(function (x) { return x.dataset.id; });
+        var rec = { name: name, limit: lim, icon: pickedEmoji(), categoryIds: ids };
+        if (o.id) Object.assign(e, rec); else db.envelopes.push(Object.assign({ id: App.uid() }, rec));
+        App.save(); App.closeSheet(); App.render();
+      };
+      var del = $('#e-del', el);
+      if (del) del.onclick = function () {
+        App.confirmSheet('Delete "' + e.name + '"?', 'Your transactions are kept – only the envelope is removed.', 'Delete', function () {
+          db.envelopes = db.envelopes.filter(function (x) { return x.id !== o.id; });
+          App.save(); App.render();
+        });
+      };
+    });
+  };
+  App.actions.toggleChip = function (el) { el.classList.toggle('sel'); };
+  App.actions.envDetail = function (el) {
+    var e = App.db.envelopes.filter(function (x) { return x.id === el.dataset.id; })[0], mk = App.ui.month;
+    var tx = App.db.transactions.filter(function (t) { return t.type === 'expense' && t.date.indexOf(mk) === 0 && e.categoryIds.indexOf(t.categoryId) >= 0; }).sort(App.sortTx);
+    var s = App.envSpent(e, mk);
+    var h = '<div class="sheet-h"><h3>' + e.icon + ' ' + esc(e.name) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="kv"><span>Limit</span><b>' + money(e.limit) + '</b></div><div class="kv"><span>Spent in ' + App.monthLabel(mk) + '</span><b class="ex">' + money(s) + '</b></div><div class="kv"><span>Left</span><b class="' + (e.limit - s < 0 ? 'ex' : 'in') + '">' + money(e.limit - s) + '</b></div>' +
+      '<div class="btn-row" style="margin:10px 0"><button class="btn ghost" data-act="editEnvelope" data-id="' + e.id + '">Edit envelope</button></div>' +
+      (tx.length ? '<div class="daygroup" style="box-shadow:none">' + tx.map(function (t) { return App.txRow(t, true); }).join('') + '</div>' : '<p class="muted" style="text-align:center">No spending yet this month</p>');
+    App.openSheet(h);
+  };
+  App.actions.editEnvelope = function (el) { App.closeSheet(); App.openEnvelope({ id: el.dataset.id }); };
+  App.actions.unbudgeted = function () {
+    var mk = App.ui.month, used = [];
+    App.db.envelopes.forEach(function (e) { used = used.concat(e.categoryIds); });
+    var tx = App.db.transactions.filter(function (t) { return t.type === 'expense' && t.date.indexOf(mk) === 0 && used.indexOf(t.categoryId) < 0; }).sort(App.sortTx);
+    App.openSheet('<div class="sheet-h"><h3>📦 Not in any envelope</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div><p class="muted">Add these categories to an envelope to budget for them.</p><div class="daygroup" style="box-shadow:none">' + tx.map(function (t) { return App.txRow(t, true); }).join('') + '</div>');
+  };
+})(window.App);
+</script>
+<script>'use strict';
+(function (App) {
+  var $ = App.$, $$ = App.$$, esc = App.esc, money = App.money, r2 = App.r2, icon = App.icon;
+  var H = function () { return App.formHelpers; };
+
+  // ---------- page shell ----------
+  var PAGES = {};
+  App.actions.openPage = function (el) { App.openPage(el.dataset.p); };
+  App.openPage = function (name) { App.ui.page = name; $('#page').classList.remove('hidden'); App.renderPage(); };
+  App.closePage = function () { App.ui.page = null; $('#page').classList.add('hidden'); $('#page').innerHTML = ''; App.render(); };
+  App.actions.closePage = function () { App.closePage(); };
+  App.renderPage = function () {
+    var p = PAGES[App.ui.page];
+    if (!p) return;
+    var pg = p(), el = $('#page'), top = el.querySelector('.page-b') ? el.querySelector('.page-b').scrollTop : 0;
+    el.innerHTML = '<div class="page-h"><button class="ib" data-act="closePage" aria-label="Back">' + icon('back') + '</button><h2>' + pg.title + '</h2>' + (pg.right || '') + '</div><div class="page-b">' + pg.body + '</div>';
+    el.querySelector('.page-b').scrollTop = top;
+  };
+  var plus = function (act) { return '<button class="ib" data-act="' + act + '" aria-label="Add">' + icon('plus') + '</button>'; };
+  var empty = function (e, t) { return '<div class="empty"><div class="big">' + e + '</div><p>' + t + '</p></div>'; };
+  var daysUntil = function (d) { return Math.round((App.parse(d) - App.parse(App.today())) / 864e5); };
+
+  // ---------- BILLS ----------
+  var FREQ = { weekly: 'Every week', monthly: 'Every month', yearly: 'Every year' };
+  PAGES.bills = function () {
+    var db = App.db, list = db.bills.slice().sort(function (a, b) { return a.nextDue.localeCompare(b.nextDue); });
+    var monthly = 0;
+    db.bills.forEach(function (b) { if (b.type === 'expense') monthly += b.freq === 'weekly' ? b.amount * 52 / 12 : (b.freq === 'yearly' ? b.amount / 12 : b.amount); });
+    var body = '<div class="hero"><small>Monthly commitments</small><div class="big">' + money(monthly) + '</div><small>' + db.bills.length + ' recurring item' + (db.bills.length === 1 ? '' : 's') + '</small></div>';
+    if (!list.length) body += empty('🔔', 'Add rent, EMIs, subscriptions or salary.<br>They can be added automatically and remind you before they are due.');
+    body += '<div class="daygroup">' + list.map(function (b) {
+      var d = daysUntil(b.nextDue), c = App.cat(b.categoryId), a = App.acc(b.accountId);
+      var badge = d < 0 ? '<span class="badge red">Overdue ' + (-d) + 'd</span>' : (d === 0 ? '<span class="badge green">Due today</span>' : '<span class="badge">in ' + d + 'd</span>');
+      return '<div class="row" data-act="editBill" data-id="' + b.id + '"><div class="ico" style="background:var(--b100)">' + (c ? c.icon : '🔔') + '</div><div class="row-main"><div class="row-title">' + esc(b.title) + '</div><div class="row-sub">' + FREQ[b.freq] + ' · ' + App.shortDate(b.nextDue) + (a ? ' · ' + esc(a.name) : '') + (b.auto ? ' · auto' : '') + '</div></div><div style="text-align:right"><div class="amt ' + (b.type === 'income' ? 'in' : 'ex') + '">' + money(b.amount) + '</div>' + badge + '</div>' +
+        (!b.auto && d <= 0 ? '<button class="badge green" style="margin-left:6px" data-act="payBill" data-id="' + b.id + '">Mark paid</button>' : '') + '</div>';
+    }).join('') + '</div>';
+    return { title: 'Bills & subscriptions', right: plus('addBill'), body: body };
+  };
+  App.actions.payBill = function (el, e) {
+    e.stopPropagation(); App.payBill(el.dataset.id); App.render(); App.toast('Recorded');
+  };
+  App.actions.addBill = function () { openBill({}); };
+  App.actions.editBill = function (el) { openBill({ id: el.dataset.id }); };
+  function openBill(o) {
+    var db = App.db;
+    if (!db.accounts.length) { App.toast('Add an account first'); return; }
+    var b = o.id ? db.bills.filter(function (x) { return x.id === o.id; })[0] : { title: '', type: 'expense', amount: '', accountId: db.accounts[0].id, categoryId: '', freq: 'monthly', nextDue: App.today(), auto: false, remind: 1 };
+    var draw = function (type) {
+      var cats = db.categories.filter(function (c) { return c.type === type; });
+      var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' recurring item</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+        '<div class="seg" id="b-type">' + [['expense', 'Bill / expense', 'exp'], ['income', 'Income', 'inc']].map(function (s) { return '<button class="' + s[2] + ' ' + (type === s[0] ? 'on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        '<label class="lbl">Title</label><input class="inp" id="b-title" value="' + esc(b.title) + '" placeholder="e.g. Rent, Netflix, Salary" maxlength="40">' +
+        '<div class="two"><div><label class="lbl">Amount</label><input class="inp" id="b-amt" inputmode="decimal" value="' + (b.amount || '') + '"></div><div><label class="lbl">Repeats</label><select class="inp" id="b-freq">' + Object.keys(FREQ).map(function (f) { return '<option value="' + f + '"' + (b.freq === f ? ' selected' : '') + '>' + FREQ[f] + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="two"><div><label class="lbl">Next due</label><input class="inp" type="date" id="b-due" value="' + b.nextDue + '"></div><div><label class="lbl">Account</label><select class="inp" id="b-acc">' + H().accOptions(b.accountId) + '</select></div></div>' +
+        '<label class="lbl">Category</label><select class="inp" id="b-cat"><option value="">None</option>' + cats.map(function (c) { return '<option value="' + c.id + '"' + (b.categoryId === c.id ? ' selected' : '') + '>' + c.icon + ' ' + esc(c.name) + '</option>'; }).join('') + '</select>' +
+        '<label class="lbl">Remind me</label><select class="inp" id="b-rem">' + [[-1, 'No reminder'], [0, 'On the day'], [1, '1 day before'], [3, '3 days before']].map(function (r) { return '<option value="' + r[0] + '"' + (b.remind === r[0] ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('') + '</select>' +
+        '<div class="tog"><span>Add to my records automatically on the due date</span><input type="checkbox" id="b-auto"' + (b.auto ? ' checked' : '') + '></div>' +
+        '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="b-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="b-save">Save</button></div>';
+      App.openSheet(h, function (el) {
+        $$('#b-type button', el).forEach(function (btn) {
+          btn.onclick = function () {
+            b.title = $('#b-title', el).value; b.amount = $('#b-amt', el).value; b.freq = $('#b-freq', el).value; b.nextDue = $('#b-due', el).value || b.nextDue;
+            b.accountId = $('#b-acc', el).value; b.remind = +$('#b-rem', el).value; b.auto = $('#b-auto', el).checked; b.categoryId = '';
+            draw(btn.dataset.v);
+          };
+        });
+        $('#b-save', el).onclick = function () {
+          var title = $('#b-title', el).value.trim(), amt = App.evalAmount($('#b-amt', el).value), due = $('#b-due', el).value;
+          if (!title) { App.toast('Enter a title'); return; }
+          if (!(amt > 0)) { App.toast('Enter an amount'); return; }
+          if (!due) { App.toast('Pick the next due date'); return; }
+          var rec = { title: title, type: $('#b-type .on', el).dataset.v, amount: amt, accountId: $('#b-acc', el).value, categoryId: $('#b-cat', el).value, freq: $('#b-freq', el).value, nextDue: due, day: App.parse(due).getDate(), auto: $('#b-auto', el).checked, remind: +$('#b-rem', el).value };
+          if (o.id) Object.assign(db.bills.filter(function (x) { return x.id === o.id; })[0], rec); else db.bills.push(Object.assign({ id: App.uid() }, rec));
+          if (rec.auto) App.processBills();
+          App.save(); App.closeSheet(); App.render();
+        };
+        var del = $('#b-del', el);
+        if (del) del.onclick = function () {
+          App.confirmSheet('Delete "' + b.title + '"?', 'Past transactions stay in your records.', 'Delete', function () {
+            db.bills = db.bills.filter(function (x) { return x.id !== o.id; }); App.save(); App.render();
+          });
+        };
+      });
+    };
+    draw(b.type);
+  }
+
+  // ---------- GOALS ----------
+  PAGES.goals = function () {
+    var db = App.db, body = '';
+    var saved = db.goals.reduce(function (s, g) { return s + g.saved; }, 0), target = db.goals.reduce(function (s, g) { return s + g.target; }, 0);
+    body += '<div class="hero"><small>Total saved towards goals</small><div class="big">' + money(saved) + '</div><small>of ' + money(target) + '</small></div>';
+    if (!db.goals.length) body += empty('🎯', 'Set a goal – a trip, a gadget, an emergency fund – and watch it fill up.');
+    db.goals.forEach(function (g) {
+      var pct = g.target > 0 ? Math.min(100, g.saved / g.target * 100) : 0, extra = '';
+      if (g.deadline && g.saved < g.target) {
+        var months = Math.max(1, Math.ceil(daysUntil(g.deadline) / 30));
+        extra = daysUntil(g.deadline) < 0 ? '<span class="badge red">Past deadline</span>' : '<span>Save ' + money((g.target - g.saved) / months) + '/month to finish by ' + App.shortDate(g.deadline) + '</span>';
+      }
+      body += '<div class="env" data-act="goalDetail" data-id="' + g.id + '"><div class="env-top"><div class="ico" style="background:var(--b100)">' + g.icon + '</div><div class="env-name">' + esc(g.name) + '</div><div class="env-left">' + Math.round(pct) + '%</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><div class="env-meta"><span>' + money(g.saved) + ' saved</span><span>of ' + money(g.target) + '</span></div>' + (extra ? '<div class="env-meta" style="margin-top:6px">' + extra + '</div>' : '') + '</div>';
+    });
+    return { title: 'Savings goals', right: plus('addGoal'), body: body };
+  };
+  App.actions.addGoal = function () { openGoal({}); };
+  function openGoal(o) {
+    var g = o.id ? App.db.goals.filter(function (x) { return x.id === o.id; })[0] : { name: '', icon: '🎯', target: '', saved: '', deadline: '' };
+    var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' goal</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<label class="lbl">Goal</label><input class="inp" id="g-name" value="' + esc(g.name) + '" placeholder="e.g. Goa trip" maxlength="30">' +
+      '<div class="two"><div><label class="lbl">Target</label><input class="inp" id="g-target" inputmode="decimal" value="' + (g.target || '') + '"></div><div><label class="lbl">Saved so far</label><input class="inp" id="g-saved" inputmode="decimal" value="' + (g.saved || '') + '"></div></div>' +
+      '<label class="lbl">Target date (optional)</label><input class="inp" type="date" id="g-date" value="' + (g.deadline || '') + '">' +
+      '<label class="lbl">Icon</label>' + H().emojiGrid(g.icon) +
+      '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="g-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="g-save">Save</button></div>';
+    App.openSheet(h, function (el) {
+      $('#g-save', el).onclick = function () {
+        var name = $('#g-name', el).value.trim(), target = App.evalAmount($('#g-target', el).value), saved = $('#g-saved', el).value.trim() ? App.evalAmount($('#g-saved', el).value) : 0;
+        if (!name) { App.toast('Name your goal'); return; }
+        if (!(target > 0)) { App.toast('Enter a target amount'); return; }
+        if (isNaN(saved)) { App.toast('Saved amount is not a number'); return; }
+        var rec = { name: name, target: target, saved: saved, deadline: $('#g-date', el).value, icon: H().pickedEmoji() };
+        if (o.id) Object.assign(g, rec); else App.db.goals.push(Object.assign({ id: App.uid() }, rec));
+        App.save(); App.closeSheet(); App.render();
+      };
+      var del = $('#g-del', el);
+      if (del) del.onclick = function () {
+        App.confirmSheet('Delete "' + g.name + '"?', 'This cannot be undone.', 'Delete', function () { App.db.goals = App.db.goals.filter(function (x) { return x.id !== o.id; }); App.save(); App.render(); });
+      };
+    });
+  }
+  App.actions.goalDetail = function (el) {
+    var g = App.db.goals.filter(function (x) { return x.id === el.dataset.id; })[0];
+    App.openSheet('<div class="sheet-h"><h3>' + g.icon + ' ' + esc(g.name) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="kv"><span>Saved</span><b>' + money(g.saved) + '</b></div><div class="kv"><span>Target</span><b>' + money(g.target) + '</b></div><div class="kv"><span>Remaining</span><b>' + money(Math.max(0, g.target - g.saved)) + '</b></div>' +
+      '<label class="lbl">Add or withdraw</label><div class="amt-box"><span>' + esc(App.db.settings.currency) + '</span><input id="g-amt" inputmode="decimal" placeholder="0.00"></div>' +
+      '<div class="btn-row"><button class="btn ghost" id="g-wd">Withdraw</button><button class="btn primary" id="g-add">Add money</button></div><button class="btn ghost block" data-act="editGoal" data-id="' + g.id + '">Edit goal</button>',
+      function (s) {
+        var go = function (sign) {
+          var v = App.evalAmount($('#g-amt', s).value);
+          if (!(v > 0)) { App.toast('Enter an amount'); return; }
+          g.saved = Math.max(0, r2(g.saved + sign * v)); App.save(); App.closeSheet(); App.render();
+        };
+        $('#g-add', s).onclick = function () { go(1); }; $('#g-wd', s).onclick = function () { go(-1); };
+      });
+  };
+  App.actions.editGoal = function (el) { App.closeSheet(); openGoal({ id: el.dataset.id }); };
+
+  // ---------- LOANS ----------
+  var outstanding = function (l) { return r2(l.amount - l.payments.reduce(function (s, p) { return s + p.amount; }, 0)); };
+  PAGES.loans = function () {
+    var db = App.db, dir = App.ui.loanDir;
+    var recv = 0, owe = 0;
+    db.loans.forEach(function (l) { var o = outstanding(l); if (l.dir === 'lent') recv += o; else owe += o; });
+    var body = '<div class="hero"><small>Net position</small><div class="big">' + money(recv - owe) + '</div><div class="hero-grid" style="grid-template-columns:1fr 1fr"><div>To receive<b>' + money(recv) + '</b></div><div>To pay<b>' + money(owe) + '</b></div></div></div>' +
+      '<div class="seg"><button class="' + (dir === 'lent' ? 'on' : '') + '" data-act="loanDir" data-v="lent">I lent</button><button class="' + (dir === 'borrowed' ? 'on' : '') + '" data-act="loanDir" data-v="borrowed">I borrowed</button></div>';
+    var list = db.loans.filter(function (l) { return l.dir === dir; }).sort(function (a, b) { return (outstanding(b) > 0) - (outstanding(a) > 0) || b.date.localeCompare(a.date); });
+    if (!list.length) body += empty('🤝', dir === 'lent' ? 'Nobody owes you anything.' : 'You do not owe anyone.');
+    body += '<div class="daygroup">' + list.map(function (l) {
+      var o = outstanding(l), d = l.due ? daysUntil(l.due) : null;
+      return '<div class="row" data-act="loanDetail" data-id="' + l.id + '"><div class="ico" style="background:var(--b100)">👤</div><div class="row-main"><div class="row-title">' + esc(l.person) + '</div><div class="row-sub">' + App.shortDate(l.date) + (l.due ? ' · due ' + App.shortDate(l.due) : '') + (l.note ? ' · ' + esc(l.note) : '') + '</div></div><div style="text-align:right"><div class="amt ' + (l.dir === 'lent' ? 'in' : 'ex') + '">' + money(o) + '</div>' + (o <= 0 ? '<span class="badge green">Settled</span>' : (d !== null && d < 0 ? '<span class="badge red">Overdue</span>' : '')) + '</div></div>';
+    }).join('') + '</div>';
+    return { title: 'Loans', right: plus('addLoan'), body: body };
+  };
+  App.actions.loanDir = function (el) { App.ui.loanDir = el.dataset.v; App.renderPage(); };
+  App.actions.addLoan = function () { openLoan({}); };
+  function openLoan(o) {
+    var db = App.db;
+    var l = o.id ? db.loans.filter(function (x) { return x.id === o.id; })[0] : { dir: App.ui.loanDir, person: '', amount: '', date: App.today(), due: '', note: '', payments: [] };
+    var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' loan</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="seg" id="l-dir">' + [['lent', 'I lent'], ['borrowed', 'I borrowed']].map(function (s) { return '<button class="' + (l.dir === s[0] ? 'on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+      '<label class="lbl">Person</label><input class="inp" id="l-person" value="' + esc(l.person) + '" maxlength="40" placeholder="Name">' +
+      '<div class="two"><div><label class="lbl">Amount</label><input class="inp" id="l-amt" inputmode="decimal" value="' + (l.amount || '') + '"></div><div><label class="lbl">Date</label><input class="inp" type="date" id="l-date" value="' + l.date + '"></div></div>' +
+      '<div class="two"><div><label class="lbl">Due (optional)</label><input class="inp" type="date" id="l-due" value="' + (l.due || '') + '"></div><div><label class="lbl">Note</label><input class="inp" id="l-note" value="' + esc(l.note) + '" maxlength="60"></div></div>' +
+      (o.id ? '' : '<label class="lbl">Also record in an account?</label><select class="inp" id="l-acc"><option value="">No – just track it here</option>' + H().accOptions('') + '</select>') +
+      '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="l-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="l-save">Save</button></div>';
+    App.openSheet(h, function (el) {
+      $$('#l-dir button', el).forEach(function (b) { b.onclick = function () { $$('#l-dir button', el).forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+      $('#l-save', el).onclick = function () {
+        var person = $('#l-person', el).value.trim(), amt = App.evalAmount($('#l-amt', el).value), dir = $('#l-dir .on', el).dataset.v;
+        if (!person) { App.toast('Enter the person\'s name'); return; }
+        if (!(amt > 0)) { App.toast('Enter an amount'); return; }
+        var rec = { dir: dir, person: person, amount: amt, date: $('#l-date', el).value || App.today(), due: $('#l-due', el).value, note: $('#l-note', el).value.trim() };
+        if (o.id) Object.assign(l, rec);
+        else {
+          var nl = Object.assign({ id: App.uid(), payments: [] }, rec); db.loans.push(nl);
+          var acc = $('#l-acc', el).value;
+          if (acc) App.addTx({ type: dir === 'lent' ? 'expense' : 'income', amount: amt, date: rec.date, accountId: acc, categoryId: '', note: (dir === 'lent' ? 'Lent to ' : 'Borrowed from ') + person, loanId: nl.id });
+        }
+        App.ui.loanDir = dir; App.save(); App.closeSheet(); App.render();
+      };
+      var del = $('#l-del', el);
+      if (del) del.onclick = function () {
+        App.confirmSheet('Delete this loan?', 'Records already added to accounts stay as they are.', 'Delete', function () { db.loans = db.loans.filter(function (x) { return x.id !== o.id; }); App.save(); App.render(); });
+      };
+    });
+  }
+  App.actions.loanDetail = function (el) { loanDetail(el.dataset.id); };
+  function loanDetail(id) {
+    var db = App.db, l = db.loans.filter(function (x) { return x.id === id; })[0], o = outstanding(l);
+    var h = '<div class="sheet-h"><h3>' + esc(l.person) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="kv"><span>' + (l.dir === 'lent' ? 'Lent' : 'Borrowed') + '</span><b>' + money(l.amount) + '</b></div><div class="kv"><span>Outstanding</span><b class="' + (l.dir === 'lent' ? 'in' : 'ex') + '">' + money(o) + '</b></div>' +
+      (l.payments.length ? '<div class="section-t" style="margin-top:12px">Payments</div>' + l.payments.map(function (p) { return '<div class="kv"><span>' + App.dateLabel(p.date) + '</span><b>' + money(p.amount) + '</b></div>'; }).join('') : '') +
+      (o > 0 ? '<label class="lbl">' + (l.dir === 'lent' ? 'Received back' : 'Paid back') + '</label><div class="amt-box"><span>' + esc(db.settings.currency) + '</span><input id="p-amt" inputmode="decimal" value="' + o + '"></div><div class="two"><div><label class="lbl">Date</label><input class="inp" type="date" id="p-date" value="' + App.today() + '"></div><div><label class="lbl">Record in</label><select class="inp" id="p-acc"><option value="">Just track</option>' + H().accOptions('') + '</select></div></div><button class="btn primary block" id="p-save">Record payment</button>' : '<p class="muted" style="text-align:center;margin-top:14px">🎉 Settled</p>') +
+      '<button class="btn ghost block" data-act="editLoan" data-id="' + l.id + '">Edit loan</button>';
+    App.openSheet(h, function (s) {
+      var b = $('#p-save', s);
+      if (b) b.onclick = function () {
+        var v = App.evalAmount($('#p-amt', s).value);
+        if (!(v > 0)) { App.toast('Enter an amount'); return; }
+        var date = $('#p-date', s).value || App.today(), acc = $('#p-acc', s).value;
+        l.payments.push({ id: App.uid(), date: date, amount: v });
+        if (acc) App.addTx({ type: l.dir === 'lent' ? 'income' : 'expense', amount: v, date: date, accountId: acc, categoryId: '', note: (l.dir === 'lent' ? 'Repayment from ' : 'Repaid ') + l.person, loanId: l.id });
+        App.save(); App.closeSheet(); App.render();
+      };
+    });
+  }
+  App.actions.editLoan = function (el) { App.closeSheet(); openLoan({ id: el.dataset.id }); };
+
+  // ---------- CATEGORIES ----------
+  PAGES.categories = function () {
+    var t = App.ui.catType, list = App.db.categories.filter(function (c) { return c.type === t; });
+    var body = '<div class="seg"><button class="' + (t === 'expense' ? 'on' : '') + '" data-act="catTab" data-v="expense">Expense</button><button class="' + (t === 'income' ? 'on' : '') + '" data-act="catTab" data-v="income">Income</button></div>';
+    if (!list.length) body += empty('🏷️', 'No ' + t + ' categories yet. Tap + to create one.');
+    body += '<div class="daygroup">' + list.map(function (c) {
+      return '<div class="row" data-act="editCat" data-id="' + c.id + '"><div class="ico" style="background:' + c.color + '22;color:' + c.color + '">' + c.icon + '</div><div class="row-main"><div class="row-title">' + esc(c.name) + '</div><div class="row-sub">' + App.catUsage(c.id) + ' transactions</div></div>' + icon('fwd') + '</div>';
+    }).join('') + '</div>';
+    return { title: 'Categories', right: plus('addCat'), body: body };
+  };
+  App.actions.catTab = function (el) { App.ui.catType = el.dataset.v; App.renderPage(); };
+  App.actions.addCat = function () { App.openCategory({ type: App.ui.catType }); };
+  App.actions.editCat = function (el) { App.openCategory({ id: el.dataset.id }); };
+
+  // ---------- BACKUP ----------
+  var when = function (iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never'; };
+  PAGES.backup = function () {
+    var s = App.db.settings, native = !!App.cap('Filesystem');
+    var body = '<div class="card"><div class="kv"><span>Last backup</span><b>' + when(s.lastBackup) + '</b></div><div class="kv"><span>Last shared to Drive/other</span><b>' + when(s.lastShared) + '</b></div></div>' +
+      '<button class="btn primary block" data-act="doBackup">Back up now</button>' +
+      '<button class="btn ghost block" data-act="doShare">Share backup (Google Drive, WhatsApp…)</button>' +
+      '<button class="btn ghost block" data-act="pickRestore">Restore from a backup file</button>' +
+      '<input type="file" id="restoreFile" class="hidden" accept=".json,application/json" data-change="restoreFile">' +
+      '<div class="section-t">Automatic backups</div><div class="card">' +
+      '<div class="tog"><span>Save a backup file automatically</span><input type="checkbox" data-change="setAuto"' + (s.autoBackup ? ' checked' : '') + '></div>' +
+      '<div class="tog"><span>How often</span><select class="inp" style="width:auto" data-change="setFreq">' + [[1, 'Daily'], [7, 'Weekly'], [30, 'Monthly']].map(function (f) { return '<option value="' + f[0] + '"' + (s.backupEveryDays === f[0] ? ' selected' : '') + '>' + f[1] + '</option>'; }).join('') + '</select></div>' +
+      '<div class="tog"><span>Remind me to share a copy to Drive</span><input type="checkbox" data-change="setRemindBackup"' + (s.remindBackup ? ' checked' : '') + '></div></div>' +
+      '<p class="muted" style="font-size:13px;line-height:1.5">' + (native ? 'Automatic backups are saved on your phone (Documents/BlueLedger) whenever you open the app and one is due; the last 10 are kept. Android\'s own Auto Backup to your Google account may also protect app data. To be safe against a lost phone, use <b>Share backup</b> to put a copy in Google Drive.' : 'You are running in a browser preview: backups download as a file.') + '</p>' +
+      '<div class="section-t">Export</div><button class="btn ghost block" data-act="doCsv">Export all transactions (CSV)</button>';
+    return { title: 'Backup & restore', body: body };
+  };
+  App.actions.doBackup = async function () {
+    try { var r = await App.backupNow(false); App.toast('Saved ' + r.name + ' → ' + r.where); } catch (e) { App.toast(e.message || 'Backup failed'); }
+    App.renderPage();
+  };
+  App.actions.doShare = async function () { try { await App.shareBackup(); } catch (e) { /* cancelled */ } App.renderPage(); };
+  App.actions.doCsv = async function () { try { await App.exportCSV(); } catch (e) { App.toast('Export failed'); } };
+  App.actions.pickRestore = function () { $('#restoreFile').click(); };
+  App.changes.restoreFile = function (el) {
+    var f = el.files && el.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try { var probe = JSON.parse(rd.result); var d = probe.data || probe; if (!d.accounts || !d.transactions) throw 0; }
+      catch (e) { App.toast('That file is not a BlueLedger backup'); return; }
+      App.confirmSheet('Replace all current data?', 'Everything in the app will be replaced with the contents of this backup.', 'Restore', function () {
+        try { App.restoreFromText(rd.result); App.ui.page = null; $('#page').classList.add('hidden'); App.render(); App.scheduleReminders(); App.toast('Backup restored'); } catch (e2) { App.toast(e2.message); }
+      });
+    };
+    rd.readAsText(f); el.value = '';
+  };
+  App.changes.setAuto = function (el) { App.db.settings.autoBackup = el.checked; App.save(); if (el.checked) App.maybeAutoBackup(); };
+  App.changes.setFreq = function (el) { App.db.settings.backupEveryDays = +el.value; App.save(); };
+  App.changes.setRemindBackup = function (el) { App.db.settings.remindBackup = el.checked; App.save(); };
+
+  // ---------- SETTINGS & PIN ----------
+  var hashPin = function (p) { var h = 5381, s = 'bl' + p; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return String(h); };
+  PAGES.settings = function () {
+    var s = App.db.settings;
+    var body = '<div class="card"><label class="lbl" style="margin-top:0">Your name</label><input class="inp" data-change="setName" value="' + esc(s.name) + '" maxlength="30">' +
+      '<label class="lbl">Currency symbol</label><select class="inp" data-change="setCur">' + ['₹', '$', '€', '£', '¥', 'AED ', 'Rs '].map(function (c) { return '<option value="' + c + '"' + (s.currency === c ? ' selected' : '') + '>' + c.trim() + '</option>'; }).join('') + '</select></div>' +
+      '<div class="card"><div class="tog"><span>Bill reminders</span><input type="checkbox" data-change="setRem"' + (s.reminders ? ' checked' : '') + '></div>' +
+      '<div class="tog"><span>App lock (PIN)</span><button class="badge" data-act="togglePin">' + (s.pin ? 'On – tap to remove' : 'Off – tap to set') + '</button></div></div>' +
+      '<button class="btn danger block" data-act="eraseAll">Erase all data</button>' +
+      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.0 · all data stays on your phone</p>';
+    return { title: 'Settings', body: body };
+  };
+  App.changes.setName = function (el) { App.db.settings.name = el.value.trim(); App.save(); };
+  App.changes.setCur = function (el) { App.db.settings.currency = el.value; App.save(); App.render(); };
+  App.changes.setRem = function (el) { App.db.settings.reminders = el.checked; App.save(); };
+  App.actions.togglePin = function () {
+    var s = App.db.settings;
+    if (s.pin) {
+      App.pinPad('Enter PIN to remove', function (pin) {
+        if (hashPin(pin) !== s.pin) return false;
+        s.pin = null; App.save(); App.hideLock(); App.renderPage(); App.toast('App lock removed'); return true;
+      }, true);
+    } else {
+      App.pinPad('Choose a 4-digit PIN', function (pin1) {
+        App.pinPad('Confirm your PIN', function (pin2) {
+          if (pin1 !== pin2) { App.hideLock(); App.toast('PINs did not match'); return true; }
+          s.pin = hashPin(pin1); App.save(); App.hideLock(); App.renderPage(); App.toast('App lock on'); return true;
+        }, true);
+        return 'keep';
+      }, true);
+    }
+  };
+  App.actions.eraseAll = function () {
+    App.confirmSheet('Erase everything?', 'All accounts, transactions, budgets and settings will be deleted. Back up first if unsure.', 'Erase all', function () {
+      App.resetAll(); App.ui.page = null; $('#page').classList.add('hidden'); App.ui.tab = 'home'; App.render(); App.startWizard();
+    });
+  };
+
+  // PIN pad: cb(pin) returns true (done), false (wrong → shake/clear) or 'keep' (leave pad open for next prompt)
+  App.pinPad = function (title, cb, cancellable) {
+    var el = $('#lock'), pin = '';
+    el.classList.remove('hidden');
+    var draw = function (msg) {
+      el.innerHTML = '<div><div style="font-size:42px">🔒</div><h2 style="margin:8px 0 0">' + esc(title) + '</h2><div class="pin-dots">' + [0, 1, 2, 3].map(function (i) { return '<i class="' + (i < pin.length ? 'on' : '') + '"></i>'; }).join('') + '</div><div style="height:22px;opacity:.9">' + (msg || '') + '</div><div class="keypad">' +
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(function (k) { return k === '' ? '<span></span>' : '<button data-k="' + k + '">' + k + '</button>'; }).join('') + '</div>' +
+        (cancellable ? '<p><button data-k="x" style="margin-top:18px;color:#cfe0ff;font-weight:700">Cancel</button></p>' : '') + '</div>';
+      $$('button', el).forEach(function (b) {
+        b.onclick = function () {
+          var k = b.dataset.k;
+          if (k === 'x') { App.hideLock(); return; }
+          if (k === '⌫') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
+          if (pin.length === 4) {
+            var res = cb(pin);
+            if (res === false) { pin = ''; draw('Wrong PIN, try again'); } else if (res === 'keep') { /* next prompt drew itself */ }
+            return;
+          }
+          draw();
+        };
+      });
+    };
+    draw();
+  };
+  App.hideLock = function () { var el = $('#lock'); el.classList.add('hidden'); el.innerHTML = ''; };
+  App.lockIfNeeded = function () {
+    var s = App.db.settings;
+    if (!s.pin || !s.onboarded) return;
+    App.pinPad('Enter PIN', function (pin) { if (hashPin(pin) !== s.pin) return false; App.hideLock(); return true; }, false);
+  };
+
+  // ---------- SETUP WIZARD ----------
+  var wz = null;
+  App.startWizard = function () {
+    wz = { step: 0, name: '', currency: '₹', accounts: [], expSel: {}, expCustom: [], incSel: {}, incCustom: [], limits: {}, auto: true, freq: 7, remindBackup: true, reminders: true };
+    $('#wizard').classList.remove('hidden');
+    drawWz();
+  };
+  var STEPS = [
+    ['Welcome 👋', 'Let\'s set things up your way – it takes about a minute.'],
+    ['Your accounts', 'Add every place your money lives: cash, banks, cards, wallets.'],
+    ['Your categories', 'Pick what you spend on and earn from. You can add your own.'],
+    ['Your envelopes', 'Set a monthly limit for the categories you want to control. Leave blank to skip.'],
+    ['Backups & reminders', 'Keep your data safe and never miss a bill.']
+  ];
+  function readWz() {
+    var w = $('#wizard');
+    if (wz.step === 0) { wz.name = ($('#w-name', w).value || '').trim(); wz.currency = $('#w-cur', w).value; }
+    if (wz.step === 1) {
+      wz.accounts = $$('.acc-edit', w).map(function (r) {
+        return { name: $('.w-an', r).value.trim(), type: $('.w-at', r).value, opening: $('.w-ao', r).value };
+      });
+    }
+    if (wz.step === 3) { $$('.w-limit', w).forEach(function (i) { wz.limits[i.dataset.n] = i.value; }); }
+    if (wz.step === 4) { wz.auto = $('#w-auto', w).checked; wz.freq = +$('#w-freq', w).value; wz.remindBackup = $('#w-rb', w).checked; wz.reminders = $('#w-rem', w).checked; }
+  }
+  function expNames() { return App.SUG_EXP.map(function (x) { return x[0]; }).concat(wz.expCustom).filter(function (n) { return wz.expSel[n]; }); }
+  function chipsFor(t) {
+    var sug = t === 'exp' ? App.SUG_EXP : App.SUG_INC, custom = t === 'exp' ? wz.expCustom : wz.incCustom, sel = t === 'exp' ? wz.expSel : wz.incSel;
+    var all = sug.map(function (x) { return x[0]; }).concat(custom);
+    return '<div class="chips">' + all.map(function (n) {
+      var em = (sug.filter(function (x) { return x[0] === n; })[0] || [0, '🏷️'])[1];
+      return '<button class="cchip ' + (sel[n] ? 'sel' : '') + '" data-act="wzToggle" data-t="' + t + '" data-n="' + esc(n) + '"><span>' + em + '</span>' + esc(n) + '</button>';
+    }).join('') + '</div><div class="two" style="grid-template-columns:1fr auto;margin-top:10px"><input class="inp" id="w-new-' + t + '" placeholder="Add your own…" maxlength="26"><button class="btn ghost" style="flex:none;padding:0 18px" data-act="wzAdd" data-t="' + t + '">Add</button></div>';
+  }
+  function drawWz() {
+    var w = $('#wizard'), s = wz.step, body = '';
+    if (s === 0) {
+      body = '<label class="lbl">What should we call you?</label><input class="inp" id="w-name" placeholder="Your name" value="' + esc(wz.name) + '" maxlength="30">' +
+        '<label class="lbl">Currency</label><select class="inp" id="w-cur">' + ['₹', '$', '€', '£', '¥', 'AED ', 'Rs '].map(function (c) { return '<option value="' + c + '"' + (wz.currency === c ? ' selected' : '') + '>' + c.trim() + '</option>'; }).join('') + '</select>' +
+        '<p class="muted" style="margin-top:20px;line-height:1.5">Your data stays on this phone. Nothing is uploaded unless you choose to share a backup.</p>';
+    } else if (s === 1) {
+      body = '<div class="chips" style="margin-bottom:12px">' + [['Cash', 'cash'], ['Bank account', 'bank'], ['Credit card', 'card'], ['UPI wallet', 'wallet'], ['Savings', 'savings']].map(function (p) { return '<button class="cchip add" data-act="wzAcc" data-n="' + p[0] + '" data-t="' + p[1] + '">+ ' + p[0] + '</button>'; }).join('') + '<button class="cchip add" data-act="wzAcc" data-n="" data-t="bank">+ Other</button></div>' +
+        (wz.accounts.length ? wz.accounts.map(function (a, i) {
+          return '<div class="acc-edit" data-i="' + i + '"><div class="two" style="grid-template-columns:1fr auto"><input class="inp w-an" placeholder="Account name" value="' + esc(a.name) + '" maxlength="30"><button class="ib" data-act="wzDelAcc" data-i="' + i + '" style="color:var(--expense)">' + icon('trash') + '</button></div><div class="two" style="margin-top:8px"><select class="inp w-at">' + App.ACC_TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (a.type === t[0] ? ' selected' : '') + '>' + t[2] + ' ' + t[1] + '</option>'; }).join('') + '</select><input class="inp w-ao" inputmode="decimal" placeholder="Balance now" value="' + esc(a.opening) + '"></div></div>';
+        }).join('') + '<p class="muted" style="font-size:12px">For a credit card you owe money on, enter the balance with a minus sign.</p>' : '<p class="muted">Tap a suggestion above to add your first account.</p>');
+    } else if (s === 2) {
+      body = '<div class="section-t" style="margin-top:0;display:flex;justify-content:space-between">Spending <button data-act="wzAll" data-t="exp" style="color:var(--b600)">Select all</button></div>' + chipsFor('exp') +
+        '<div class="section-t" style="display:flex;justify-content:space-between">Income <button data-act="wzAll" data-t="inc" style="color:var(--b600)">Select all</button></div>' + chipsFor('inc');
+    } else if (s === 3) {
+      var names = expNames();
+      body = names.length ? names.map(function (n) {
+        var em = (App.SUG_EXP.filter(function (x) { return x[0] === n; })[0] || [0, '🏷️'])[1];
+        return '<div class="acc-edit"><div class="two" style="grid-template-columns:1fr 130px;align-items:center"><b>' + em + ' ' + esc(n) + '</b><input class="inp w-limit" data-n="' + esc(n) + '" inputmode="decimal" placeholder="Monthly limit" value="' + esc(wz.limits[n] || '') + '"></div></div>';
+      }).join('') + '<p class="muted" style="font-size:12px">Each limit becomes an envelope that resets every month. You can combine categories into shared envelopes later in the Budget tab.</p>' : '<p class="muted">You did not pick any spending categories, so there is nothing to budget yet. You can create envelopes any time from the Budget tab.</p>';
+    } else {
+      body = '<div class="card"><div class="tog"><span><b>Automatic backup</b><br><small class="muted">Saves a file on your phone when due</small></span><input type="checkbox" id="w-auto"' + (wz.auto ? ' checked' : '') + '></div>' +
+        '<div class="tog"><span>How often</span><select class="inp" style="width:auto" id="w-freq">' + [[1, 'Daily'], [7, 'Weekly'], [30, 'Monthly']].map(function (f) { return '<option value="' + f[0] + '"' + (wz.freq === f[0] ? ' selected' : '') + '>' + f[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="tog"><span><b>Backup reminder</b><br><small class="muted">Nudge to share a copy to Google Drive</small></span><input type="checkbox" id="w-rb"' + (wz.remindBackup ? ' checked' : '') + '></div>' +
+        '<div class="tog"><span><b>Bill reminders</b></span><input type="checkbox" id="w-rem"' + (wz.reminders ? ' checked' : '') + '></div></div>';
+    }
+    w.innerHTML = '<div class="wz-top"><div class="dots">' + STEPS.map(function (_, i) { return '<i class="' + (i <= s ? 'on' : '') + '"></i>'; }).join('') + '</div><h1>' + STEPS[s][0] + '</h1><p>' + STEPS[s][1] + '</p></div><div class="wz-body">' + body + '</div>' +
+      '<div class="wz-foot">' + (s > 0 ? '<button class="btn ghost" data-act="wzBack">Back</button>' : '') + '<button class="btn primary" data-act="wzNext">' + (s === STEPS.length - 1 ? 'Finish' : 'Next') + '</button></div>';
+  }
+  App.actions.wzAcc = function (el) { readWz(); wz.accounts.push({ name: el.dataset.n, type: el.dataset.t, opening: '' }); drawWz(); };
+  App.actions.wzDelAcc = function (el) { readWz(); wz.accounts.splice(+el.dataset.i, 1); drawWz(); };
+  App.actions.wzToggle = function (el) {
+    var sel = el.dataset.t === 'exp' ? wz.expSel : wz.incSel, n = el.dataset.n;
+    sel[n] = !sel[n]; el.classList.toggle('sel', !!sel[n]);
+  };
+  App.actions.wzAll = function (el) {
+    var t = el.dataset.t, sug = t === 'exp' ? App.SUG_EXP : App.SUG_INC, custom = t === 'exp' ? wz.expCustom : wz.incCustom, sel = t === 'exp' ? wz.expSel : wz.incSel;
+    sug.map(function (x) { return x[0]; }).concat(custom).forEach(function (n) { sel[n] = true; });
+    drawWz();
+  };
+  App.actions.wzAdd = function (el) {
+    var t = el.dataset.t, inp = $('#w-new-' + t), n = inp.value.trim();
+    if (!n) return;
+    var custom = t === 'exp' ? wz.expCustom : wz.incCustom, sel = t === 'exp' ? wz.expSel : wz.incSel, sug = (t === 'exp' ? App.SUG_EXP : App.SUG_INC).map(function (x) { return x[0]; });
+    if (sug.concat(custom).indexOf(n) < 0) custom.push(n);
+    sel[n] = true; drawWz();
+  };
+  App.actions.wzBack = function () { readWz(); wz.step = Math.max(0, wz.step - 1); drawWz(); };
+  App.actions.wzNext = function () {
+    readWz();
+    if (wz.step === 1) {
+      var named = wz.accounts.filter(function (a) { return a.name; });
+      if (!named.length) { App.toast('Add at least one account with a name'); return; }
+      wz.accounts = named;
+      for (var i = 0; i < wz.accounts.length; i++) {
+        var o = String(wz.accounts[i].opening).trim();
+        if (o && isNaN(App.evalAmount(o))) { App.toast('Check the balance for "' + wz.accounts[i].name + '"'); return; }
+      }
+    }
+    if (wz.step < STEPS.length - 1) { wz.step++; drawWz(); var b = $('#wizard .wz-body'); if (b) b.scrollTop = 0; return; }
+    finishWz();
+  };
+  function finishWz() {
+    var db = App.blank(), ci = 0, col = function () { return App.COLORS[ci++ % App.COLORS.length]; };
+    db.settings.name = wz.name; db.settings.currency = wz.currency; db.settings.autoBackup = wz.auto; db.settings.backupEveryDays = wz.freq;
+    db.settings.remindBackup = wz.remindBackup; db.settings.reminders = wz.reminders; db.settings.onboarded = true;
+    wz.accounts.forEach(function (a) {
+      var o = String(a.opening).trim();
+      db.accounts.push({ id: App.uid(), name: a.name, type: a.type, opening: o ? App.evalAmount(o) : 0, color: col() });
+    });
+    var mk = function (names, type, sug) {
+      names.forEach(function (n) {
+        var em = (sug.filter(function (x) { return x[0] === n; })[0] || [0, '🏷️'])[1];
+        var c = { id: App.uid(), name: n, type: type, icon: em, color: col() };
+        db.categories.push(c);
+        var lim = type === 'expense' ? App.evalAmount(wz.limits[n] || '') : NaN;
+        if (lim > 0) db.envelopes.push({ id: App.uid(), name: n, icon: em, limit: lim, categoryIds: [c.id] });
+      });
+    };
+    mk(expNames(), 'expense', App.SUG_EXP);
+    mk(App.SUG_INC.map(function (x) { return x[0]; }).concat(wz.incCustom).filter(function (n) { return wz.incSel[n]; }), 'income', App.SUG_INC);
+    App.db = db; App.persist();
+    $('#wizard').classList.add('hidden'); $('#wizard').innerHTML = '';
+    App.ui.tab = 'home'; App.render();
+    App.scheduleReminders(); App.maybeAutoBackup();
+    App.toast('All set' + (db.settings.name ? ', ' + db.settings.name : '') + '! Tap + to add your first transaction.');
+  }
+})(window.App);
+</script>
+<script>'use strict';
+(function (App) {
+  var $ = App.$;
+
+  // Returns true if the back press was handled inside the app
+  App.back = function () {
+    if (!$('#lock').classList.contains('hidden')) return true;
+    if (!$('#wizard').classList.contains('hidden')) {
+      var b = $('#wizard [data-act="wzBack"]');
+      if (b) b.click();
+      return true;
+    }
+    if (App._sheetOpen) { App.closeSheet(); return true; }
+    if (App.ui.page) { App.closePage(); return true; }
+    if (App.ui.searchOpen) { App.actions.toggleSearch(); return true; }
+    if (App.ui.tab !== 'home') { App.setTab('home'); return true; }
+    return false;
+  };
+
+  function boot() {
+    var s = App.db.settings;
+    if (!s.onboarded) {
+      App.render();
+      App.startWizard();
+    } else {
+      var n = App.processBills();
+      App.render();
+      App.lockIfNeeded();
+      if (n) App.toast('Added ' + n + ' recurring entr' + (n === 1 ? 'y' : 'ies'));
+      App.maybeAutoBackup();
+      App.scheduleReminders();
+    }
+
+    var capApp = App.cap('App');
+    if (capApp) {
+      capApp.addListener('backButton', function () {
+        if (!App.back()) capApp.exitApp();
+      });
+      var hiddenAt = 0;
+      capApp.addListener('appStateChange', function (st) {
+        if (!st.isActive) { hiddenAt = Date.now(); return; }
+        if (hiddenAt && Date.now() - hiddenAt > 30000) App.lockIfNeeded();
+        if (App.db.settings.onboarded) {
+          var n = App.processBills();
+          if (n) { App.render(); App.toast('Added ' + n + ' recurring entr' + (n === 1 ? 'y' : 'ies')); }
+          App.maybeAutoBackup();
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})(window.App);
+</script>
+</body>
+</html>
