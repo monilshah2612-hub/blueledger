@@ -29,6 +29,7 @@
       if (n) App.toast('Added ' + n + ' recurring entr' + (n === 1 ? 'y' : 'ies'));
       App.maybeAutoBackup();
       App.scheduleReminders();
+      App.photos.prune();
     }
 
     var capApp = App.cap('App');

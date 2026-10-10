@@ -182,7 +182,7 @@
         else {
           var nl = Object.assign({ id: App.uid(), payments: [] }, rec); db.loans.push(nl);
           var acc = $('#l-acc', el).value;
-          if (acc) App.addTx({ type: dir === 'lent' ? 'expense' : 'income', amount: amt, date: rec.date, accountId: acc, categoryId: '', note: (dir === 'lent' ? 'Lent to ' : 'Borrowed from ') + person, loanId: nl.id });
+          if (acc) App.addTx({ type: dir === 'lent' ? 'expense' : 'income', amount: amt, date: rec.date, accountId: acc, categoryId: '', note: (dir === 'lent' ? 'Lent to ' : 'Borrowed from ') + person, loanId: nl.id, noReport: true });
         }
         App.ui.loanDir = dir; App.save(); App.closeSheet(); App.render();
       };
@@ -207,7 +207,7 @@
         if (!(v > 0)) { App.toast('Enter an amount'); return; }
         var date = $('#p-date', s).value || App.today(), acc = $('#p-acc', s).value;
         l.payments.push({ id: App.uid(), date: date, amount: v });
-        if (acc) App.addTx({ type: l.dir === 'lent' ? 'income' : 'expense', amount: v, date: date, accountId: acc, categoryId: '', note: (l.dir === 'lent' ? 'Repayment from ' : 'Repaid ') + l.person, loanId: l.id });
+        if (acc) App.addTx({ type: l.dir === 'lent' ? 'income' : 'expense', amount: v, date: date, accountId: acc, categoryId: '', note: (l.dir === 'lent' ? 'Repayment from ' : 'Repaid ') + l.person, loanId: l.id, noReport: true });
         App.save(); App.closeSheet(); App.render();
       };
     });
@@ -241,6 +241,7 @@
       '<div class="tog"><span>Save a backup file automatically</span><input type="checkbox" data-change="setAuto"' + (s.autoBackup ? ' checked' : '') + '></div>' +
       '<div class="tog"><span>How often</span><select class="inp" style="width:auto" data-change="setFreq">' + [[1, 'Daily'], [7, 'Weekly'], [30, 'Monthly']].map(function (f) { return '<option value="' + f[0] + '"' + (s.backupEveryDays === f[0] ? ' selected' : '') + '>' + f[1] + '</option>'; }).join('') + '</select></div>' +
       '<div class="tog"><span>Remind me to share a copy to Drive</span><input type="checkbox" data-change="setRemindBackup"' + (s.remindBackup ? ' checked' : '') + '></div></div>' +
+      '<div class="tog"><span>Include receipt photos in backups I save or share<br><small class="muted">Makes the file bigger. Automatic backups never include photos.</small></span><input type="checkbox" data-change="setBackupPhotos"' + (s.backupPhotos !== false ? ' checked' : '') + '></div>' +
       '<p class="muted" style="font-size:13px;line-height:1.5">' + (native ? 'Automatic backups are saved on your phone (Documents/BlueLedger) whenever you open the app and one is due; the last 10 are kept. Android\'s own Auto Backup to your Google account may also protect app data. To be safe against a lost phone, use <b>Share backup</b> to put a copy in Google Drive.' : 'You are running in a browser preview: backups download as a file.') + '</p>' +
       '<div class="section-t">Export</div><button class="btn ghost block" data-act="doCsv">Export all transactions (CSV)</button>';
     return { title: 'Backup & restore', body: body };
@@ -267,6 +268,167 @@
   App.changes.setAuto = function (el) { App.db.settings.autoBackup = el.checked; App.save(); if (el.checked) App.maybeAutoBackup(); };
   App.changes.setFreq = function (el) { App.db.settings.backupEveryDays = +el.value; App.save(); };
   App.changes.setRemindBackup = function (el) { App.db.settings.remindBackup = el.checked; App.save(); };
+  App.changes.setBackupPhotos = function (el) { App.db.settings.backupPhotos = el.checked; App.save(); };
+
+
+  // ---------- SPLIT WITH FRIENDS ----------
+  var friendColor = function (f) { var i = App.db.friends.indexOf(f); return App.COLORS[(i < 0 ? 0 : i * 3) % App.COLORS.length]; };
+  var avatar = function (f) { return '<div class="avatar" style="background:' + friendColor(f) + '">' + esc((f.name || '?').charAt(0).toUpperCase()) + '</div>'; };
+  var whoName = function (w) { if (w === 'me') return 'You'; var f = App.friend(w); return f ? f.name : 'Someone'; };
+  PAGES.split = function () {
+    var db = App.db, owed = 0, owe = 0;
+    var rows = db.friends.map(function (f) { var b = App.friendBalance(f.id); if (b > 0) owed += b; else owe -= b; return { f: f, b: b }; });
+    var body = '<div class="hero"><small>Net balance</small><div class="big">' + money(owed - owe) + '</div><div class="hero-grid" style="grid-template-columns:1fr 1fr"><div>You are owed<b>' + money(owed) + '</b></div><div>You owe<b>' + money(owe) + '</b></div></div></div>';
+    if (!db.friends.length) body += empty('👥', 'Add the friends you share costs with, then split a dinner, a trip or the rent.');
+    else {
+      body += '<button class="btn primary block" style="margin:0 0 12px" data-act="addSplit">+ Split an expense</button><div class="daygroup">' + rows.map(function (r) {
+        var cls = r.b > 0 ? 'in' : (r.b < 0 ? 'ex' : '');
+        return '<div class="row" data-act="friendDetail" data-id="' + r.f.id + '">' + avatar(r.f) + '<div class="row-main"><div class="row-title">' + esc(r.f.name) + '</div><div class="row-sub">' + (r.b > 0 ? 'owes you' : (r.b < 0 ? 'you owe' : 'settled up')) + '</div></div><div class="amt ' + cls + '">' + (r.b === 0 ? '–' : money(Math.abs(r.b))) + '</div></div>';
+      }).join('') + '</div>';
+      var recent = db.splits.slice().sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
+      if (recent.length) {
+        body += '<div class="section-t">Recent shared expenses</div><div class="daygroup">' + recent.map(function (sp) {
+          return '<div class="row" data-act="splitDetail" data-id="' + sp.id + '"><div class="ico" style="background:var(--b100)">🧾</div><div class="row-main"><div class="row-title">' + esc(sp.title) + '</div><div class="row-sub">' + App.shortDate(sp.date) + ' · ' + esc(whoName(sp.paidBy)) + ' paid</div></div><div class="amt">' + money(sp.total) + '</div></div>';
+        }).join('') + '</div>';
+      }
+    }
+    return { title: 'Split with friends', right: plus('addFriend'), body: body };
+  };
+
+  App.actions.addFriend = function () { friendSheet({}); };
+  function friendSheet(o, after) {
+    var f = o.id ? App.friend(o.id) : { name: '' };
+    App.openSheet('<div class="sheet-h"><h3>' + (o.id ? 'Rename friend' : 'Add a friend') + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div><label class="lbl">Name</label><input class="inp" id="fr-name" value="' + esc(f.name) + '" maxlength="30" placeholder="e.g. Rahul"><div class="btn-row"><button class="btn primary" id="fr-save">Save</button></div>', function (el) {
+      $('#fr-save', el).onclick = function () {
+        var name = $('#fr-name', el).value.trim();
+        if (!name) { App.toast('Enter a name'); return; }
+        if (o.id) f.name = name; else App.db.friends.push({ id: App.uid(), name: name });
+        App.save(); App.closeSheet(); App.render();
+        if (after) after();
+      };
+    });
+  }
+
+  App.actions.friendDetail = function (el) { friendDetail(el.dataset.id); };
+  function friendDetail(id) {
+    var db = App.db, f = App.friend(id), b = App.friendBalance(id);
+    var hist = [];
+    db.splits.forEach(function (sp) {
+      var mine = 0, theirs = 0;
+      sp.shares.forEach(function (x) { if (x.who === 'me') mine += x.amount; if (x.who === id) theirs += x.amount; });
+      if (sp.paidBy === 'me' && theirs > 0) hist.push({ date: sp.date, title: sp.title, amt: theirs, act: 'splitDetail', id: sp.id, sub: 'You paid · their share' });
+      else if (sp.paidBy === id && mine > 0) hist.push({ date: sp.date, title: sp.title, amt: -mine, act: 'splitDetail', id: sp.id, sub: f.name + ' paid · your share' });
+    });
+    db.settlements.forEach(function (st) {
+      if (st.friendId === id) hist.push({ date: st.date, title: st.dir === 'received' ? 'They paid you back' : 'You paid them back', amt: st.dir === 'received' ? -st.amount : st.amount, act: 'delSettle', id: st.id, sub: 'Settlement – tap to delete' });
+    });
+    hist.sort(function (a, c) { return c.date.localeCompare(a.date); });
+    var dir = b < 0 ? 'paid' : 'received';
+    var h = '<div class="sheet-h"><h3>' + esc(f.name) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="hero" style="margin:4px 0 10px"><small>' + (b > 0 ? esc(f.name) + ' owes you' : (b < 0 ? 'You owe ' + esc(f.name) : 'All settled up')) + '</small><div class="big" style="margin-bottom:0">' + money(Math.abs(b)) + '</div></div>' +
+      '<div class="section-t" style="margin-top:6px">Settle up</div>' +
+      '<div class="seg" id="st-dir"><button class="' + (dir === 'received' ? 'on' : '') + '" data-v="received">They paid me</button><button class="' + (dir === 'paid' ? 'on' : '') + '" data-v="paid">I paid them</button></div>' +
+      '<div class="two"><div><label class="lbl" style="margin-top:0">Amount</label><input class="inp" id="st-amt" inputmode="decimal" value="' + (b !== 0 ? Math.abs(b) : '') + '"></div><div><label class="lbl" style="margin-top:0">Date</label><input class="inp" type="date" id="st-date" value="' + App.today() + '"></div></div>' +
+      '<label class="lbl">Record in account</label><select class="inp" id="st-acc"><option value="">Just track here</option>' + (db.accounts.length ? H().accOptions('') : '') + '</select>' +
+      '<button class="btn primary block" id="st-save">Record payment</button>' +
+      '<div class="btn-row"><button class="btn ghost" data-act="renameFriend" data-id="' + id + '">Rename</button><button class="btn danger" data-act="delFriend" data-id="' + id + '">Remove friend</button></div>' +
+      (hist.length ? '<div class="section-t">History</div><div class="daygroup" style="box-shadow:none">' + hist.map(function (x) {
+        return '<div class="row" data-act="' + x.act + '" data-id="' + x.id + '"><div class="row-main"><div class="row-title">' + esc(x.title) + '</div><div class="row-sub">' + App.shortDate(x.date) + ' · ' + esc(x.sub) + '</div></div><div class="amt ' + (x.amt > 0 ? 'in' : 'ex') + '">' + (x.amt > 0 ? '+' : '-') + money(Math.abs(x.amt)) + '</div></div>';
+      }).join('') + '</div>' : '');
+    App.openSheet(h, function (el) {
+      $$('#st-dir button', el).forEach(function (bt) { bt.onclick = function () { $$('#st-dir button', el).forEach(function (x) { x.classList.toggle('on', x === bt); }); }; });
+      $('#st-save', el).onclick = function () {
+        var amt = App.evalAmount($('#st-amt', el).value);
+        if (!(amt > 0)) { App.toast('Enter an amount'); return; }
+        App.addSettlement({ friendId: id, amount: amt, date: $('#st-date', el).value || App.today(), dir: $('#st-dir .on', el).dataset.v, accountId: $('#st-acc', el).value });
+        App.save(); App.closeSheet(); App.render(); App.toast('Recorded');
+      };
+    });
+  }
+  App.actions.renameFriend = function (el) { App.closeSheet(); friendSheet({ id: el.dataset.id }); };
+  App.actions.delFriend = function (el) {
+    var id = el.dataset.id, db = App.db;
+    var used = db.splits.some(function (sp) { return sp.paidBy === id || sp.shares.some(function (x) { return x.who === id; }); }) || db.settlements.some(function (x) { return x.friendId === id; });
+    if (used) { App.toast('Delete their shared expenses and settlements first'); return; }
+    App.confirmSheet('Remove ' + App.friend(id).name + '?', 'This cannot be undone.', 'Remove', function () {
+      db.friends = db.friends.filter(function (x) { return x.id !== id; }); App.save(); App.render();
+    });
+  };
+  App.actions.delSettle = function (el) {
+    var id = el.dataset.id;
+    App.confirmSheet('Delete this settlement?', 'The matching record in your account (if any) is removed too.', 'Delete', function () { App.deleteSettlement(id); App.save(); App.render(); });
+  };
+  App.actions.splitDetail = function (el) {
+    var sp = App.db.splits.filter(function (x) { return x.id === el.dataset.id; })[0];
+    if (!sp) return;
+    var c = App.cat(sp.categoryId);
+    App.openSheet('<div class="sheet-h"><h3>🧾 ' + esc(sp.title) + '</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<div class="kv"><span>Date</span><b>' + App.dateLabel(sp.date) + '</b></div><div class="kv"><span>Total</span><b>' + money(sp.total) + '</b></div><div class="kv"><span>Paid by</span><b>' + esc(whoName(sp.paidBy)) + '</b></div>' + (c ? '<div class="kv"><span>Category</span><b>' + c.icon + ' ' + esc(c.name) + '</b></div>' : '') +
+      '<div class="section-t">Shares</div>' + sp.shares.map(function (x) { return '<div class="kv"><span>' + esc(whoName(x.who)) + '</span><b>' + money(x.amount) + '</b></div>'; }).join('') +
+      '<div class="btn-row"><button class="btn danger" data-act="delSplit" data-id="' + sp.id + '">Delete this split</button></div>');
+  };
+  App.actions.delSplit = function (el) {
+    var id = el.dataset.id;
+    App.confirmSheet('Delete this shared expense?', 'Its records in your accounts are removed and balances are recalculated.', 'Delete', function () { App.deleteSplit(id); App.save(); App.render(); });
+  };
+
+  App.actions.addSplit = function () {
+    var db = App.db;
+    if (!db.friends.length) { friendSheet({}, App.actions.addSplit); return; }
+    if (!db.accounts.length) { App.toast('Add an account first'); return; }
+    var st = { mode: 'equal', who: { me: true }, vals: {} };
+    var cats = db.categories.filter(function (c) { return c.type === 'expense'; });
+    var h = '<div class="sheet-h"><h3>Split an expense</h3><button class="ib" data-act="closeSheet">' + icon('close') + '</button></div>' +
+      '<label class="lbl" style="margin-top:0">What was it for?</label><input class="inp" id="sp-title" placeholder="e.g. Dinner at Toit" maxlength="40">' +
+      '<div class="amt-box"><span>' + esc(db.settings.currency) + '</span><input id="sp-total" inputmode="decimal" placeholder="Total bill" autocomplete="off"></div>' +
+      '<div class="two"><div><label class="lbl">Date</label><input class="inp" type="date" id="sp-date" value="' + App.today() + '"></div><div><label class="lbl">Paid by</label><select class="inp" id="sp-by"><option value="me">You</option>' + db.friends.map(function (f) { return '<option value="' + f.id + '">' + esc(f.name) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div id="sp-acc-wrap"><label class="lbl">Paid from account</label><select class="inp" id="sp-acc">' + H().accOptions(db.settings.lastAcc || db.accounts[0].id) + '</select></div>' +
+      '<label class="lbl">Category (for your share)</label><select class="inp" id="sp-cat"><option value="">None</option>' + cats.map(function (c) { return '<option value="' + c.id + '">' + c.icon + ' ' + esc(c.name) + '</option>'; }).join('') + '</select>' +
+      '<label class="lbl">Split between</label><div class="chips" id="sp-who"><button class="cchip sel" data-w="me">You</button>' + db.friends.map(function (f) { return '<button class="cchip" data-w="' + f.id + '">' + esc(f.name) + '</button>'; }).join('') + '<button class="cchip add" id="sp-newfriend">+ Friend</button></div>' +
+      '<div class="seg" style="margin-top:12px" id="sp-mode"><button class="on" data-v="equal">Equally</button><button data-v="exact">Exact amounts</button></div><div id="sp-shares"></div>' +
+      '<div class="btn-row"><button class="btn primary" id="sp-save">Save</button></div>';
+    App.openSheet(h, function (el) {
+      var order = function () { return ['me'].concat(db.friends.map(function (f) { return f.id; })).filter(function (w) { return st.who[w]; }); };
+      var total = function () { var v = App.evalAmount($('#sp-total', el).value); return v > 0 ? v : 0; };
+      var drawShares = function () {
+        var box = $('#sp-shares', el), who = order(), t = total();
+        if (st.mode === 'equal') {
+          var sh = who.length ? App.equalShares(t, who) : [];
+          box.innerHTML = t && who.length ? sh.map(function (x) { return '<div class="kv"><span>' + esc(whoName(x.who)) + '</span><b>' + money(x.amount) + '</b></div>'; }).join('') : '<p class="muted" style="font-size:13px">Enter the total and pick who shares it.</p>';
+        } else {
+          box.innerHTML = who.map(function (w) { return '<div class="kv"><span>' + esc(whoName(w)) + '</span><input class="inp" style="width:120px;text-align:right" inputmode="decimal" data-sv="' + w + '" value="' + esc(st.vals[w] || '') + '"></div>'; }).join('') + '<div class="kv"><span class="muted">Left to assign</span><b id="sp-left"></b></div>';
+          var upd = function () { var sum = 0; who.forEach(function (w) { var v = App.evalAmount(st.vals[w] || ''); if (v > 0) sum += v; }); $('#sp-left', el).textContent = money(total() - sum); };
+          $$('[data-sv]', box).forEach(function (i) { i.oninput = function () { st.vals[i.dataset.sv] = i.value; upd(); }; });
+          upd();
+        }
+      };
+      $('#sp-total', el).oninput = drawShares;
+      $('#sp-by', el).onchange = function () { $('#sp-acc-wrap', el).style.display = this.value === 'me' ? '' : 'none'; };
+      $$('#sp-who [data-w]', el).forEach(function (b) {
+        b.onclick = function () { st.who[b.dataset.w] = !st.who[b.dataset.w]; b.classList.toggle('sel', !!st.who[b.dataset.w]); drawShares(); };
+      });
+      $$('#sp-mode button', el).forEach(function (b) {
+        b.onclick = function () { st.mode = b.dataset.v; $$('#sp-mode button', el).forEach(function (x) { x.classList.toggle('on', x === b); }); drawShares(); };
+      });
+      $('#sp-newfriend', el).onclick = function () { App.closeSheet(); friendSheet({}, App.actions.addSplit); };
+      $('#sp-save', el).onclick = function () {
+        var t = total(), who = order(), by = $('#sp-by', el).value, title = $('#sp-title', el).value.trim() || 'Shared expense';
+        if (!(t > 0)) { App.toast('Enter the total amount'); return; }
+        if (who.length < 2 && !(who.length === 1 && who[0] !== 'me')) { App.toast('Pick at least one friend to split with'); return; }
+        if (by !== 'me' && !st.who.me) { App.toast('Include yourself, or choose "You" as the payer'); return; }
+        var shares;
+        if (st.mode === 'equal') shares = App.equalShares(t, who);
+        else {
+          var sum = 0; shares = who.map(function (w) { var v = App.evalAmount(st.vals[w] || ''); v = v > 0 ? v : 0; sum += v; return { who: w, amount: v }; });
+          if (Math.abs(sum - t) > 0.01) { App.toast('Shares add up to ' + money(sum) + ', but the total is ' + money(t)); return; }
+        }
+        App.addSplit({ title: title, total: t, date: $('#sp-date', el).value || App.today(), paidBy: by, accountId: by === 'me' ? $('#sp-acc', el).value : '', categoryId: $('#sp-cat', el).value, shares: shares });
+        if (by === 'me') App.db.settings.lastAcc = $('#sp-acc', el).value;
+        App.save(); App.closeSheet(); App.render(); App.toast('Split saved');
+      };
+      drawShares();
+    });
+  };
 
   // ---------- SETTINGS & PIN ----------
   var hashPin = function (p) { var h = 5381, s = 'bl' + p; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return String(h); };
@@ -277,7 +439,7 @@
       '<div class="card"><div class="tog"><span>Bill reminders</span><input type="checkbox" data-change="setRem"' + (s.reminders ? ' checked' : '') + '></div>' +
       '<div class="tog"><span>App lock (PIN)</span><button class="badge" data-act="togglePin">' + (s.pin ? 'On – tap to remove' : 'Off – tap to set') + '</button></div></div>' +
       '<button class="btn danger block" data-act="eraseAll">Erase all data</button>' +
-      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.0 · all data stays on your phone</p>';
+      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.1 · all data stays on your phone</p>';
     return { title: 'Settings', body: body };
   };
   App.changes.setName = function (el) { App.db.settings.name = el.value.trim(); App.save(); };

@@ -5,11 +5,13 @@ A blue, offline-first budgeting and expense tracker for Android. Built with plai
 ## What's in it
 
 - **Setup wizard**: name, currency, your accounts and opening balances, your own categories, optional envelope limits, backup preferences
-- **Multiple accounts** (cash, bank, credit card, UPI/wallet, savings, investment) with income, expenses and **inter-account transfers**
+- **Multiple accounts** (cash, bank, credit card, UPI/wallet, savings, investment) with income, expenses and **inter-account transfers**; pick each account's icon and one of **20 preset colours**
 - **Records tab**: Daily list grouped by date, **Calendar** (monthly grid with income/expense/net per day; tap a date to see and add that day's transactions), **Monthly** yearly summary, search, account filter
-- **Envelope budgeting**: monthly limit per envelope, each envelope draws from the categories you choose, resets every month, progress bars turn amber at 80% and red when over
+- **Envelope budgeting**: monthly limit per envelope, each envelope draws from the categories you choose, resets every month (or **carries unused money forward** if you switch that on per envelope), progress bars turn amber at 80% and red when over; the Records tab also shows what was brought forward from earlier months
 - **Your own categories** for income and expenses (name, icon, colour)
-- **Reports**: donut by category, 6-month income vs expenses, savings rate, average daily spend, biggest expense
+- **Reports**: donut by category, 6-month income vs expenses, savings rate, average daily spend, biggest expense, plus a **Yearly report** (12-month chart, highlights, month table, CSV export)
+- **Split with friends**: split equally or by exact amounts, track who owes whom, settle up (optionally recorded in an account)
+- **Receipt / invoice photos** on any transaction (stored privately on the phone, included in manual backups)
 - **Bills & subscriptions**: weekly/monthly/yearly, optional auto-add, local reminders
 - **Savings goals** with a "save X per month" hint
 - **Loans**: money lent and borrowed with repayments, optionally recorded in an account
@@ -52,4 +54,5 @@ All app code is in `www/` (`js/core.js` data and backup logic, `views.js` main s
 
 - Automatic backups are written to `Documents/BlueLedger` where Android allows it, otherwise to the app's own storage. App-private copies are deleted if you uninstall, so use **Share backup** to keep a copy in Google Drive.
 - The debug APK is fine for personal use. A signed release build is only needed for the Play Store.
+- Updating: the build uses a fixed signing key (`android/app/blueledger-debug.keystore`), so a new APK installs over the old one and keeps your data. If you installed an APK built *before* version 1.1, back up, uninstall it once, install the new one, then restore.
 - Google Drive background sync is not included; it needs a Google Cloud OAuth client and could be added later.
