@@ -41,6 +41,15 @@ window.App = window.App || {};
   // ---------- constants ----------
   // 20 preset colours (blues first), used for accounts and categories
   App.COLORS = ['#1e63e9', '#2f80ed', '#0ea5e9', '#06b6d4', '#3b5bdb', '#4f46e5', '#0f3a8f', '#5aa0ff', '#14b8a6', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#d946ef', '#8b5cf6', '#64748b', '#78716c'];
+  // Need / Want / Savings classification (no targets – just tracking)
+  App.CLASSES = [['need', 'Need', '#1e63e9'], ['want', 'Want', '#f59e0b'], ['saving', 'Savings', '#14b8a6']];
+  App.clsInfo = function (k) { return App.CLASSES.filter(function (c) { return c[0] === k; })[0]; };
+  // class of a transaction: its own choice, else its category's, else ''
+  App.txClass = function (t) {
+    if (t.cls) return t.cls;
+    var c = App.cat(t.categoryId);
+    return (c && c.cls) || '';
+  };
   App.ACC_EMOJIS = ['💵', '🏦', '💳', '👛', '🐖', '📈', '💼', '🏠', '🚗', '🎓', '🛍️', '✈️', '💰', '🪙', '💎', '🏧', '📱', '🧾', '🏪', '🌐', '🔒', '🎁', '⭐', '🏢'];
   App.EMOJIS = ['🍔', '🛒', '🚌', '⛽', '🏠', '💡', '📱', '🛍️', '💊', '🎬', '✈️', '🎓', '🔁', '💈', '🎁', '📈', '🏦', '🏷️', '💼', '💻', '🏪', '💰', '↩️', '☕', '🍕', '🚕', '🚗', '🏋️', '🐶', '👶', '🎮', '📚', '🧾', '🔧', '🎉', '🌴', '💳', '🪙', '🧴', '🍺'];
   App.SUG_EXP = [['Food & Dining', '🍔'], ['Groceries', '🛒'], ['Transport', '🚌'], ['Fuel', '⛽'], ['Rent', '🏠'], ['Bills & Utilities', '💡'], ['Mobile & Internet', '📱'], ['Shopping', '🛍️'], ['Health', '💊'], ['Entertainment', '🎬'], ['Travel', '✈️'], ['Education', '🎓'], ['Subscriptions', '🔁'], ['Personal Care', '💈'], ['Gifts & Donations', '🎁'], ['Investments', '📈'], ['EMI / Loans', '🏦'], ['Others', '🏷️']];

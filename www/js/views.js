@@ -100,6 +100,8 @@
     var title = isT ? 'Transfer' : (c ? c.name : (t.loanId ? 'Loan' : (isSplit ? 'Split' : 'Uncategorised')));
     var a = App.acc(t.accountId), to = App.acc(t.toAccountId);
     var sub = isT ? (a ? esc(a.name) : '?') + ' → ' + (to ? esc(to.name) : '?') : (a ? esc(a.name) : '');
+    var kl = (t.type === 'expense' && !isT) ? App.txClass(t) : '';
+    if (kl) sub += ' · <span style="color:' + App.clsInfo(kl)[2] + ';font-weight:700">' + App.clsInfo(kl)[1] + '</span>';
     if (showDate) sub += ' · ' + App.shortDate(t.date);
     var cls = isT ? 'tr' : (t.type === 'income' ? 'in' : 'ex');
     var sign = t.type === 'income' ? '+' : (t.type === 'expense' ? '-' : '');
@@ -276,6 +278,18 @@
       }).join('');
       h += '<div class="card"><svg class="donut" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--line)" stroke-width="6"/>' + segs + '<text x="21" y="20.5" class="dt1">' + (type === 'expense' ? 'Spent' : 'Earned') + '</text><text x="21" y="26" class="dt2">' + App.fmt(total).replace(/\.00$/, '') + '</text></svg><div style="margin-top:10px">' +
         items.map(function (it) { return '<div class="leg"><i style="background:' + it.color + '"></i><span>' + it.icon + ' ' + esc(it.name) + '</span><em>' + Math.round(it.v / total * 100) + '%</em><b>' + money(it.v) + '</b></div>'; }).join('') + '</div></div>';
+    }
+    // need / want / savings split (expenses only, no targets)
+    if (type === 'expense' && total) {
+      var ct = { need: 0, want: 0, saving: 0, '': 0 };
+      list.forEach(function (t) { ct[App.txClass(t)] += t.amount; });
+      var pc = function (v) { return total > 0 ? Math.round(v / total * 100) : 0; };
+      var parts = App.CLASSES.map(function (k) { return { k: k, v: r2(ct[k[0]]) }; });
+      if (ct[''] > 0) parts.push({ k: ['', 'Not classified', '#94a3b8'], v: r2(ct['']) });
+      h += '<div class="card"><h4>Needs, wants &amp; savings</h4><div style="display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--b100)">' +
+        parts.map(function (p) { return p.v > 0 ? '<i style="width:' + (p.v / total * 100) + '%;background:' + p.k[2] + '"></i>' : ''; }).join('') + '</div><div style="margin-top:6px">' +
+        parts.map(function (p) { return '<div class="leg"><i style="background:' + p.k[2] + '"></i><span>' + p.k[1] + '</span><em>' + pc(p.v) + '%</em><b>' + money(p.v) + '</b></div>'; }).join('') + '</div>' +
+        (ct[''] > 0 ? '<p class="muted" style="font-size:12px;margin:6px 0 0">Set a need/want on your categories in More → Categories to classify the rest.</p>' : '') + '</div>';
     }
     // bars: whole year, or the last 6 months
     var bm = [];

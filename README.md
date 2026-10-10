@@ -8,7 +8,7 @@ A blue, offline-first budgeting and expense tracker for Android. Built with plai
 - **Multiple accounts** (cash, bank, credit card, UPI/wallet, savings, investment) with income, expenses and **inter-account transfers**; pick each account's icon and one of **20 preset colours**
 - **Records tab**: Daily list grouped by date, **Calendar** (monthly grid with income/expense/net per day; tap a date to see and add that day's transactions), **Monthly** yearly summary, search, account filter
 - **Envelope budgeting**: monthly limit per envelope, each envelope draws from the categories you choose, resets every month (or **carries unused money forward** if you switch that on per envelope), progress bars turn amber at 80% and red when over; the Records tab also shows what was brought forward from earlier months
-- **Your own categories** for income and expenses (name, icon, colour)
+- **Your own categories** for income and expenses (name, icon, colour), each optionally tagged **Need / Want / Savings** (changeable per transaction; Reports show the split, no targets)
 - **Reports**: donut by category, 6-month income vs expenses, savings rate, average daily spend, biggest expense, plus a **Yearly report** (12-month chart, highlights, month table, CSV export)
 - **Split with friends**: split equally or by exact amounts, track who owes whom, settle up (optionally recorded in an account)
 - **Receipt / invoice photos** on any transaction (stored privately on the phone, included in manual backups)

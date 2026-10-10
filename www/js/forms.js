@@ -76,6 +76,10 @@
         return '<button class="cchip ' + (c.id === d.categoryId ? 'sel' : '') + '" data-act="pickCat" data-id="' + c.id + '"><span>' + c.icon + '</span>' + esc(c.name) + '</button>';
       }).join('') + '<button class="cchip add" data-act="newCatFromTx">+ New</button></div>';
     }
+    if (d.type === 'expense') {
+      var catCls = (App.cat(d.categoryId) || {}).cls, auto = catCls ? App.clsInfo(catCls)[1] : 'not set';
+      h += '<label class="lbl">Need or want?</label><div class="seg" id="clsSeg"><button class="' + (!d.cls ? 'on' : '') + '" data-act="pickCls" data-v="">Auto (' + auto + ')</button>' + App.CLASSES.map(function (c) { return '<button class="' + (d.cls === c[0] ? 'on' : '') + '" data-act="pickCls" data-v="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>';
+    }
     h += '<label class="lbl">Note</label><input class="inp" id="f-note" placeholder="Optional" value="' + esc(d.note) + '" maxlength="120">' +
       '<label class="lbl">Receipt / invoice photos</label><div class="chips" id="photoRow">' + (d.photos || []).map(function (id) {
         return '<button class="thumb" data-act="viewPhoto" data-id="' + id + '"><img alt="receipt" data-photo="' + id + '"></button>';
@@ -143,6 +147,12 @@
   App.actions.pickCat = function (el) {
     cur.categoryId = (cur.categoryId === el.dataset.id) ? '' : el.dataset.id;
     App.$$('#catChips .cchip').forEach(function (c) { c.classList.toggle('sel', c.dataset.id === cur.categoryId); });
+    var first = $('#clsSeg button');
+    if (first) { var cc = (App.cat(cur.categoryId) || {}).cls; first.textContent = 'Auto (' + (cc ? App.clsInfo(cc)[1] : 'not set') + ')'; }
+  };
+  App.actions.pickCls = function (el) {
+    cur.cls = el.dataset.v;
+    App.$$('#clsSeg button').forEach(function (b) { b.classList.toggle('on', b === el); });
   };
   App.actions.newCatFromTx = function () {
     readTx();
@@ -156,7 +166,7 @@
     if (cur.type === 'transfer') {
       if (!cur.toAccountId || cur.toAccountId === cur.accountId) { App.toast('Choose two different accounts'); return; }
     }
-    var rec = { type: cur.type, amount: amt, date: cur.date, accountId: cur.accountId, toAccountId: cur.type === 'transfer' ? cur.toAccountId : '', categoryId: cur.type === 'transfer' ? '' : (cur.categoryId || ''), note: (cur.note || '').trim(), photos: (cur.photos || []).slice() };
+    var rec = { type: cur.type, amount: amt, date: cur.date, accountId: cur.accountId, toAccountId: cur.type === 'transfer' ? cur.toAccountId : '', categoryId: cur.type === 'transfer' ? '' : (cur.categoryId || ''), note: (cur.note || '').trim(), photos: (cur.photos || []).slice(), cls: cur.type === 'expense' ? (cur.cls || '') : '' };
     if (cur.id) {
       var t = App.db.transactions.filter(function (x) { return x.id === cur.id; })[0];
       if (t) Object.assign(t, rec);
@@ -233,6 +243,7 @@
     var h = '<div class="sheet-h"><h3>' + (o.id ? 'Edit' : 'New') + ' category</h3><button class="ib" data-act="catCancel">' + icon('close') + '</button></div>' +
       (o.lockType ? '' : '<div class="seg" id="c-type">' + [['expense', 'Expense', 'exp'], ['income', 'Income', 'inc']].map(function (s) { return '<button class="' + s[2] + ' ' + (c.type === s[0] ? 'on' : '') + '" data-act="catType" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>') +
       '<label class="lbl">Name</label><input class="inp" id="c-name" value="' + esc(c.name) + '" placeholder="e.g. Coffee" maxlength="26">' +
+      '<div id="c-cls-wrap" style="' + (c.type === 'expense' ? '' : 'display:none') + '"><label class="lbl">Usually a… <span style="text-transform:none;font-weight:400">(optional)</span></label><div class="seg" id="c-cls"><button class="' + (!c.cls ? 'on' : '') + '" data-act="catCls" data-v="">Not set</button>' + App.CLASSES.map(function (k) { return '<button class="' + (c.cls === k[0] ? 'on' : '') + '" data-act="catCls" data-v="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div></div>' +
       '<label class="lbl">Icon</label>' + emojiGrid(c.icon) +
       '<label class="lbl">Colour</label>' + swatches(c.color) +
       '<div class="btn-row">' + (o.id ? '<button class="btn danger" id="c-del" style="flex:none;padding:14px 18px">' + icon('trash') + '</button>' : '') + '<button class="btn primary" id="c-save">Save</button></div>';
@@ -242,7 +253,7 @@
         var name = $('#c-name', el).value.trim();
         if (!name) { App.toast('Give the category a name'); return; }
         var typeEl = $('#c-type .on', el), type = o.lockType ? o.type : (typeEl ? typeEl.dataset.v : c.type);
-        var rec = { name: name, type: type, icon: pickedEmoji(), color: pickedColor() }, saved;
+        var clsEl = $('#c-cls .on', el), rec = { name: name, type: type, icon: pickedEmoji(), color: pickedColor(), cls: (type === 'expense' && clsEl) ? clsEl.dataset.v : '' }, saved;
         if (o.id) { saved = App.cat(o.id); Object.assign(saved, rec); }
         else { saved = Object.assign({ id: App.uid() }, rec); App.db.categories.push(saved); }
         App.save(); App.closeSheet(); App.render();
@@ -263,6 +274,10 @@
   };
   App.actions.catType = function (el) {
     App.$$('#c-type button').forEach(function (b) { b.classList.toggle('on', b === el); });
+    var w = $('#c-cls-wrap'); if (w) w.style.display = el.dataset.v === 'expense' ? '' : 'none';
+  };
+  App.actions.catCls = function (el) {
+    App.$$('#c-cls button').forEach(function (b) { b.classList.toggle('on', b === el); });
   };
   App.actions.catCancel = function () {
     var cb = App._catCb; App._catCb = null; App.closeSheet();

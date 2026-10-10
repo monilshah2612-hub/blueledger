@@ -220,7 +220,7 @@
     var body = '<div class="seg"><button class="' + (t === 'expense' ? 'on' : '') + '" data-act="catTab" data-v="expense">Expense</button><button class="' + (t === 'income' ? 'on' : '') + '" data-act="catTab" data-v="income">Income</button></div>';
     if (!list.length) body += empty('🏷️', 'No ' + t + ' categories yet. Tap + to create one.');
     body += '<div class="daygroup">' + list.map(function (c) {
-      return '<div class="row" data-act="editCat" data-id="' + c.id + '"><div class="ico" style="background:' + c.color + '22;color:' + c.color + '">' + c.icon + '</div><div class="row-main"><div class="row-title">' + esc(c.name) + '</div><div class="row-sub">' + App.catUsage(c.id) + ' transactions</div></div>' + icon('fwd') + '</div>';
+      return '<div class="row" data-act="editCat" data-id="' + c.id + '"><div class="ico" style="background:' + c.color + '22;color:' + c.color + '">' + c.icon + '</div><div class="row-main"><div class="row-title">' + esc(c.name) + '</div><div class="row-sub">' + (c.cls ? App.clsInfo(c.cls)[1] + ' · ' : '') + App.catUsage(c.id) + ' transactions</div></div>' + icon('fwd') + '</div>';
     }).join('') + '</div>';
     return { title: 'Categories', right: plus('addCat'), body: body };
   };
@@ -439,7 +439,7 @@
       '<div class="card"><div class="tog"><span>Bill reminders</span><input type="checkbox" data-change="setRem"' + (s.reminders ? ' checked' : '') + '></div>' +
       '<div class="tog"><span>App lock (PIN)</span><button class="badge" data-act="togglePin">' + (s.pin ? 'On – tap to remove' : 'Off – tap to set') + '</button></div></div>' +
       '<button class="btn danger block" data-act="eraseAll">Erase all data</button>' +
-      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.1 · all data stays on your phone</p>';
+      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.2 · all data stays on your phone</p>';
     return { title: 'Settings', body: body };
   };
   App.changes.setName = function (el) { App.db.settings.name = el.value.trim(); App.save(); };
@@ -595,6 +595,8 @@
     if (wz.step < STEPS.length - 1) { wz.step++; drawWz(); var b = $('#wizard .wz-body'); if (b) b.scrollTop = 0; return; }
     finishWz();
   };
+  // starting suggestions only – every one can be changed in More > Categories
+  var DEFAULT_CLS = { 'Food & Dining': 'want', 'Groceries': 'need', 'Transport': 'need', 'Fuel': 'need', 'Rent': 'need', 'Bills & Utilities': 'need', 'Mobile & Internet': 'need', 'Shopping': 'want', 'Health': 'need', 'Entertainment': 'want', 'Travel': 'want', 'Education': 'need', 'Subscriptions': 'want', 'Personal Care': 'want', 'Gifts & Donations': 'want', 'Investments': 'saving', 'EMI / Loans': 'need' };
   function finishWz() {
     var db = App.blank(), ci = 0, col = function () { return App.COLORS[ci++ % App.COLORS.length]; };
     db.settings.name = wz.name; db.settings.currency = wz.currency; db.settings.autoBackup = wz.auto; db.settings.backupEveryDays = wz.freq;
@@ -607,6 +609,7 @@
       names.forEach(function (n) {
         var em = (sug.filter(function (x) { return x[0] === n; })[0] || [0, '🏷️'])[1];
         var c = { id: App.uid(), name: n, type: type, icon: em, color: col() };
+        if (type === 'expense' && DEFAULT_CLS[n]) c.cls = DEFAULT_CLS[n];
         db.categories.push(c);
         var lim = type === 'expense' ? App.evalAmount(wz.limits[n] || '') : NaN;
         if (lim > 0) db.envelopes.push({ id: App.uid(), name: n, icon: em, limit: lim, categoryIds: [c.id] });
