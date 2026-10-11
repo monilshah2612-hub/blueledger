@@ -5,6 +5,7 @@
 
   // ---------- page shell ----------
   var PAGES = {};
+  App.pages = PAGES;
   App.actions.openPage = function (el) { App.openPage(el.dataset.p); };
   App.openPage = function (name) { App.ui.page = name; $('#page').classList.remove('hidden'); App.renderPage(); };
   App.closePage = function () { App.ui.page = null; $('#page').classList.add('hidden'); $('#page').innerHTML = ''; App.render(); };
@@ -259,7 +260,7 @@
     rd.onload = function () {
       try { var probe = JSON.parse(rd.result); var d = probe.data || probe; if (!d.accounts || !d.transactions) throw 0; }
       catch (e) { App.toast('That file is not a BlueLedger backup'); return; }
-      App.confirmSheet('Replace all current data?', 'Everything in the app will be replaced with the contents of this backup.', 'Restore', function () {
+      App.confirmSheet('Replace all current data?', 'Everything in the app will be replaced with the contents of this backup.' + (App.sync && App.sync.isOn() ? ' Sync is on, so your other devices will be updated to match it too.' : ''), 'Restore', function () {
         try { App.restoreFromText(rd.result); App.ui.page = null; $('#page').classList.add('hidden'); App.render(); App.scheduleReminders(); App.toast('Backup restored'); } catch (e2) { App.toast(e2.message); }
       });
     };
@@ -439,7 +440,7 @@
       '<div class="card"><div class="tog"><span>Bill reminders</span><input type="checkbox" data-change="setRem"' + (s.reminders ? ' checked' : '') + '></div>' +
       '<div class="tog"><span>App lock (PIN)</span><button class="badge" data-act="togglePin">' + (s.pin ? 'On – tap to remove' : 'Off – tap to set') + '</button></div></div>' +
       '<button class="btn danger block" data-act="eraseAll">Erase all data</button>' +
-      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.2 · all data stays on your phone</p>';
+      '<p class="muted" style="text-align:center;font-size:12px;margin-top:16px">BlueLedger 1.3 · all data stays on your phone</p>';
     return { title: 'Settings', body: body };
   };
   App.changes.setName = function (el) { App.db.settings.name = el.value.trim(); App.save(); };
@@ -463,7 +464,9 @@
     }
   };
   App.actions.eraseAll = function () {
-    App.confirmSheet('Erase everything?', 'All accounts, transactions, budgets and settings will be deleted. Back up first if unsure.', 'Erase all', function () {
+    var synced = App.sync && App.sync.isOn();
+    App.confirmSheet('Erase everything?', 'All accounts, transactions, budgets and settings on this device will be deleted. Back up first if unsure.' + (synced ? ' Sync will be switched off here, so your other devices and your cloud copy are not touched.' : ''), 'Erase all', function () {
+      if (synced) App.sync.disconnect();
       App.resetAll(); App.ui.page = null; $('#page').classList.add('hidden'); App.ui.tab = 'home'; App.render(); App.startWizard();
     });
   };
@@ -538,7 +541,8 @@
     if (s === 0) {
       body = '<label class="lbl">What should we call you?</label><input class="inp" id="w-name" placeholder="Your name" value="' + esc(wz.name) + '" maxlength="30">' +
         '<label class="lbl">Currency</label><select class="inp" id="w-cur">' + ['₹', '$', '€', '£', '¥', 'AED ', 'Rs '].map(function (c) { return '<option value="' + c + '"' + (wz.currency === c ? ' selected' : '') + '>' + c.trim() + '</option>'; }).join('') + '</select>' +
-        '<p class="muted" style="margin-top:20px;line-height:1.5">Your data stays on this phone. Nothing is uploaded unless you choose to share a backup.</p>';
+        '<p class="muted" style="margin-top:20px;line-height:1.5">Your data stays on this device unless you choose to share a backup or turn on sync.</p>' +
+        (App.sync && App.sync.configured() ? '<button class="btn ghost block" data-act="wzSync">🔄 I already use BlueLedger – sign in to sync</button>' : '');
     } else if (s === 1) {
       body = '<div class="chips" style="margin-bottom:12px">' + [['Cash', 'cash'], ['Bank account', 'bank'], ['Credit card', 'card'], ['UPI wallet', 'wallet'], ['Savings', 'savings']].map(function (p) { return '<button class="cchip add" data-act="wzAcc" data-n="' + p[0] + '" data-t="' + p[1] + '">+ ' + p[0] + '</button>'; }).join('') + '<button class="cchip add" data-act="wzAcc" data-n="" data-t="bank">+ Other</button></div>' +
         (wz.accounts.length ? wz.accounts.map(function (a, i) {
@@ -562,6 +566,10 @@
     w.innerHTML = '<div class="wz-top"><div class="dots">' + STEPS.map(function (_, i) { return '<i class="' + (i <= s ? 'on' : '') + '"></i>'; }).join('') + '</div><h1>' + STEPS[s][0] + '</h1><p>' + STEPS[s][1] + '</p></div><div class="wz-body">' + body + '</div>' +
       '<div class="wz-foot">' + (s > 0 ? '<button class="btn ghost" data-act="wzBack">Back</button>' : '') + '<button class="btn primary" data-act="wzNext">' + (s === STEPS.length - 1 ? 'Finish' : 'Next') + '</button></div>';
   }
+  App.actions.wzSync = function () {
+    readWz();
+    App.sync.signInSheet(function () { if (App.db.settings.onboarded) { $('#wizard').classList.add('hidden'); $('#wizard').innerHTML = ''; App.render(); } else drawWz(); });
+  };
   App.actions.wzAcc = function (el) { readWz(); wz.accounts.push({ name: el.dataset.n, type: el.dataset.t, opening: '' }); drawWz(); };
   App.actions.wzDelAcc = function (el) { readWz(); wz.accounts.splice(+el.dataset.i, 1); drawWz(); };
   App.actions.wzToggle = function (el) {

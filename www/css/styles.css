@@ -136,7 +136,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .menu-item b { display: block; } .menu-item small { color: var(--muted); }
 
 /* sheets & pages */
-#sheetRoot { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+#sheetRoot { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
 #sheetRoot.open { pointer-events: auto; }
 .scrim { position: absolute; inset: 0; background: rgba(5, 20, 50, .5); animation: fade .2s; }
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 92%; overflow-y: auto; background: var(--card); border-radius: 24px 24px 0 0; padding: 8px 16px calc(18px + var(--safe-bot)); animation: up .22s ease-out; }
@@ -204,3 +204,15 @@ label.lbl { display: block; font-size: 12px; font-weight: 700; color: var(--mute
 .thumb.gone { display: none; }
 .swatch { width: 28px; height: 28px; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; flex: none; }
+
+/* ---- web version on a big screen: centre the app like a phone ---- */
+@media (min-width: 760px) {
+  html { background: linear-gradient(160deg, #0f3a8f, #1e63e9 45%, #5aa0ff); }
+  body { background: transparent; }
+  #app { position: relative; width: 520px; max-width: 100%; margin: 0 auto; background: var(--bg); box-shadow: 0 0 70px rgba(5, 20, 60, .35); }
+  #bottomnav { left: calc(50% - 260px); right: auto; width: 520px; }
+  #fab { right: calc(50% - 260px + 18px); }
+  .page, .wizard, .lock { left: calc(50% - 260px); right: auto; width: 520px; box-shadow: 0 0 70px rgba(5, 20, 60, .35); }
+  #sheetRoot .sheet { left: calc(50% - 260px); right: auto; width: 520px; }
+  #sheetRoot .sheet, .page-b, .wz-body, #screen { scrollbar-width: thin; }
+}

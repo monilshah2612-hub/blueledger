@@ -319,6 +319,7 @@
   // ---------- MORE ----------
   function renderMore() {
     var items = [
+      ['sync', '🔄', 'Sync across devices', App.sync ? App.sync.summary() : 'Use BlueLedger on phone and web together'],
       ['split', '👥', 'Split with friends', 'Shared expenses and who owes whom'],
       ['bills', '🔔', 'Bills & subscriptions', 'Recurring payments with reminders'],
       ['goals', '🎯', 'Savings goals', 'Track what you are saving for'],

@@ -127,6 +127,7 @@ window.App = window.App || {};
     saveT = setTimeout(function () {
       if (App.maybeAutoBackup) App.maybeAutoBackup();
       if (App.scheduleReminders) App.scheduleReminders();
+      if (App.sync) App.sync.touch();
     }, 3000);
   };
   App.resetAll = function () { App.db = blank(); persist(); };
@@ -287,7 +288,8 @@ window.App = window.App || {};
       if (!b.auto) return;
       var guard = 0;
       while (b.nextDue <= t && guard++ < 60) {
-        App.addTx({ type: b.type, amount: b.amount, date: b.nextDue, accountId: b.accountId, categoryId: b.categoryId || '', note: b.title, billId: b.id });
+        var tid = 'bl' + b.id + b.nextDue;
+        if (!App.db.transactions.some(function (x) { return x.id === tid; })) App.addTx({ id: tid, type: b.type, amount: b.amount, date: b.nextDue, accountId: b.accountId, categoryId: b.categoryId || '', note: b.title, billId: b.id });
         b.nextDue = App.nextDate(b.nextDue, b.freq, b.day);
         added++;
       }

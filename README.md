@@ -16,6 +16,7 @@ A blue, offline-first budgeting and expense tracker for Android. Built with plai
 - **Savings goals** with a "save X per month" hint
 - **Loans**: money lent and borrowed with repayments, optionally recorded in an account
 - **Backups**: automatic file backups (daily/weekly/monthly, last 10 kept), one-tap manual backup, share to Google Drive/WhatsApp, restore from file, CSV export, backup reminders
+- **Web app + sync**: the same app runs in any browser (installable, works offline) and can sync with the phone app through your own free Firebase project. Setup: `FIREBASE-SETUP.md`
 - **App lock** with a 4-digit PIN, dark mode, undo on delete, arithmetic in amount fields (e.g. `350+150`)
 
 ## Try it in a browser (no build needed)
@@ -48,7 +49,7 @@ Open `preview.html` in Chrome. Native features (file backups to Documents, notif
 
 ## Editing the app
 
-All app code is in `www/` (`js/core.js` data and backup logic, `views.js` main screens, `forms.js` add/edit sheets, `more.js` bills, goals, loans, backup, settings and the wizard, `css/styles.css` theme). After any change run `npx cap sync android` and rebuild.
+All app code is in `www/` (`js/sync.js` cloud sync, `js/firebase.bundle.js` the Firebase connector (rebuilt from `tools/sync-build`), `js/core.js` data and backup logic, `views.js` main screens, `forms.js` add/edit sheets, `more.js` bills, goals, loans, backup, settings and the wizard, `css/styles.css` theme). After any change run `npx cap sync android` and rebuild.
 
 ## Notes
 

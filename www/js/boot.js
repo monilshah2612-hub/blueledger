@@ -17,6 +17,14 @@
     return false;
   };
 
+  // makes the web version installable and usable offline (not used inside the phone app)
+  function registerWorker() {
+    try {
+      var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+      if (!native && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () { });
+    } catch (e) { /* ignore */ }
+  }
+
   function boot() {
     var s = App.db.settings;
     if (!s.onboarded) {
@@ -32,6 +40,9 @@
       App.photos.prune();
     }
 
+    if (App.sync) App.sync.init();
+    registerWorker();
+
     var capApp = App.cap('App');
     if (capApp) {
       capApp.addListener('backButton', function () {
@@ -46,6 +57,7 @@
           if (n) { App.render(); App.toast('Added ' + n + ' recurring entr' + (n === 1 ? 'y' : 'ies')); }
           App.maybeAutoBackup();
         }
+        if (App.sync) App.sync.touch();
       });
     }
   }
